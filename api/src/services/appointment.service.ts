@@ -1,7 +1,7 @@
 import { Appointment, IAppointment } from "../models";
 
-export class AppointmentService {rt { IAppointment, Appointment } from "../models";
-import logger from "../config/logger.config";
+
+
 
 export class AppointmentService {
   static async createAppoint(appointmentdata: IAppointment) {
@@ -9,7 +9,7 @@ export class AppointmentService {
       // Check if appointment already exists
       const existingAppointment = await Appointment.findOne({
         patient: appointmentdata.patient,
-        doctor: appointmentdata.doctor,
+
         appointmentDate: appointmentdata.appointmentDate,
       });
       if (existingAppointment) {
@@ -49,7 +49,7 @@ export class AppointmentService {
       }
       const sanitizedData = { ...updateData };
       delete sanitizedData.patient; // prevent changing patient
-      delete sanitizedData.doctor; // prevent changing doctor
+
       const updatedAppointment = await Appointment.findByIdAndUpdate(
         id,
         sanitizedData,
@@ -60,7 +60,7 @@ export class AppointmentService {
       }
       return updatedAppointment;
     } catch (error: any) {
-      logger.error("Error updating appointment:", error);
+
       throw new Error(error.message);
     }
   }
@@ -68,10 +68,10 @@ export class AppointmentService {
     try {
       const appointment = await Appointment.findByIdAndDelete(id);
 
-      logger.info(`Appointment deleted: ${id}`);
+
       return appointment;
     } catch (error: any) {
-      logger.error("Error deleting appointment:", error);
+
       throw new Error(error.message);
     }
   }
