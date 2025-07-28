@@ -4,6 +4,7 @@ import { ClinicService } from '../services/clinic.service';
 import logger from '../config/logger.config';
 import { IClinic } from '../models';
 
+
 export class ClinicController {
   /**
    * Create clinic from Google Place ID (NEW - minimal input required)
@@ -172,15 +173,15 @@ export class ClinicController {
         data: clinic
       });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('already exists')) {
-        res.status(400).json({
-          success: false,
-          message: error.message
-        });
-        return;
-      }
+      // if (error instanceof Error && error.message.includes('already exists')) {
+      //   res.status(400).json({
+      //     success: false,
+      //     message: error.message
+      //   });
+      //   return;
+      // }
       
-      logger.error('Error creating clinic:', error);
+
       next(error);
     }
   }
@@ -213,12 +214,11 @@ export class ClinicController {
     }
   }
 
-  /**
-   * Get all clinics with pagination (EXISTING)
-   */
-  static async getClinics(req: Request, res: Response, next: NextFunction): Promise<void> {
+
+ static async getClinics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log("---221")
+  
+  
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
@@ -231,7 +231,8 @@ export class ClinicController {
         data: result
       });
     } catch (error) {
-      logger.error('Error fetching clinics:', error);
+      console.log(Error)
+
       next(error);
     }
   }

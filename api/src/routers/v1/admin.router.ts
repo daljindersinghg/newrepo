@@ -13,8 +13,11 @@ adminRouter.get("/:id", AdminController.getAdmin);
 adminRouter.put("/:id", AdminController.updateAdmin);
 
 // Clinic Management (EXISTING + NEW Google Places endpoints)
-adminRouter.post("/clinics", ClinicController.createClinic);
-adminRouter.get("/clinics", ClinicController.getClinics);
+// adminRouter.post("/clinics", ClinicController.createClinic);
+adminRouter.get("/clinics", (req, res, next) => {
+  console.log("Router hit for /clinics");
+  next();
+}, ClinicController.getClinics);
 // adminRouter.get("/clinics/:id", ClinicController.getClinic);
 adminRouter.put("/clinics/:id", ClinicController.updateClinic);
 adminRouter.delete("/clinics/:id", ClinicController.deleteClinic);

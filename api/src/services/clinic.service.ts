@@ -245,8 +245,10 @@ export class ClinicService {
   /**
    * Get all clinics with pagination (existing method)
    */
-  static async getClinics(page: number = 1, limit: number = 10, filters: ClinicFilters = {}) {
+  static  async getClinics(page: number = 1, limit: number = 10, filters: ClinicFilters = {}) {
     try {
+
+      console.log("-----")
       const skip = (page - 1) * limit;
       const query: any = {};
 
@@ -282,7 +284,7 @@ export class ClinicService {
         }
       };
     } catch (error: any) {
-      logger.error('Error searching clinics:', error);
+
       throw error;
     }
   }
