@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 
 interface EmailCaptureProps {
   onSubmit: (email: string) => void;
-  doctorCount: number;
+  clinicCount: number;
   location: string;
 }
 
-export function EmailCapture({ onSubmit, doctorCount, location }: EmailCaptureProps) {
+export function EmailCapture({ onSubmit, clinicCount, location }: EmailCaptureProps) {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
@@ -48,10 +48,10 @@ export function EmailCapture({ onSubmit, doctorCount, location }: EmailCapturePr
             <span className="text-3xl">💳</span>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            View {doctorCount} Dentists
+            View {clinicCount} Dental Clinics
           </h2>
           <p className="text-gray-600">
-            Enter your email to see verified dentists in {location} and get your $50 gift card info
+            Enter your email to see verified dental clinics in {location} and get your $50 gift card info
           </p>
         </div>
 

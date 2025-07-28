@@ -1,30 +1,22 @@
-// app/components/results/DoctorResults.tsx
+// app/components/results/ClinicResults.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useSimpleTracking } from '../AnalyticsProvider';
 import { Button } from '@/components/ui/button';
 import { EmailCapture } from './EmailCapture';
-import { DoctorCard } from './ClinicCard';
+import { ClinicCard } from './ClinicCard';
 
-interface Doctor {
+interface Clinic {
   _id: string;
   name: string;
+  address: string;
+  phone: string;
   email: string;
-  phone?: string;
-  specialties: string[];
-  bio?: string;
+  website?: string;
+  services: string[];
   status: 'active' | 'pending' | 'suspended';
   verified: boolean;
-  clinic: {
-    _id: string;
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
-    website?: string;
-    services: string[];
-  };
   createdAt: string;
 }
 
@@ -34,8 +26,8 @@ interface LocationData {
   lng: number;
 }
 
-export function DoctorResults() {
-  const [Clinic, setClinic] = useState<Doctor[]>([]);
+export function ClinicResults() {
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEmailCapture, setShowEmailCapture] = useState(true);
@@ -51,7 +43,7 @@ export function DoctorResults() {
     if (savedLocation) {
       const locationData = JSON.parse(savedLocation);
       setLocation(locationData);
-      fetchClinic(locationData);
+      fetchClinics(locationData);
     } else {
       setError('No search location found. Please search again.');
       setLoading(false);
@@ -65,7 +57,7 @@ export function DoctorResults() {
     }
   }, []);
 
-  const fetchClinic = async (locationData: LocationData) => {
+  const fetchClinics = async (locationData: LocationData) => {
     try {
       setLoading(true);
       
@@ -79,7 +71,7 @@ export function DoctorResults() {
         params.append('specialty', specialtyFilter);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/Clinic?${params}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/clinics?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -88,18 +80,18 @@ export function DoctorResults() {
       const data = await response.json();
       
       if (data.success) {
-        // Filter for active and verified Clinic only
-        const activeClinic = data.data.Clinic.filter((doctor: Doctor) => 
-          doctor.status === 'active' && doctor.verified
+        // Filter for active and verified clinics only
+        const activeClinics = data.data.clinics.filter((clinic: Clinic) => 
+          clinic.status === 'active' && clinic.verified
         );
         
-        // Sort Clinic based on sortBy criteria
-        const sortedClinic = sortClinic(activeClinic, sortBy);
-        setClinic(sortedClinic);
+        // Sort clinics based on sortBy criteria
+        const sortedClinics = sortClinics(activeClinics, sortBy);
+        setClinics(sortedClinics);
         
-        track('doctor_results_loaded', {
+        track('clinic_results_loaded', {
           location: locationData.address,
-          Clinic_count: sortedClinic.length,
+          clinic_count: sortedClinics.length,
           specialty_filter: specialtyFilter || 'all',
           sort_by: sortBy
         });
@@ -118,18 +110,18 @@ export function DoctorResults() {
     }
   };
 
-  const sortClinic = (doctorList: Doctor[], sortBy: string) => {
+  const sortClinics = (clinicList: Clinic[], sortBy: string) => {
     switch (sortBy) {
       case 'rating':
         // For now, random sort since we don't have ratings yet
-        return [...doctorList].sort(() => Math.random() - 0.5);
+        return [...clinicList].sort(() => Math.random() - 0.5);
       case 'availability':
         // For now, random sort since we don't have availability data yet
-        return [...doctorList].sort(() => Math.random() - 0.5);
+        return [...clinicList].sort(() => Math.random() - 0.5);
       case 'distance':
       default:
         // For now, keep original order (could implement actual distance sorting later)
-        return doctorList;
+        return clinicList;
     }
   };
 
@@ -143,7 +135,7 @@ export function DoctorResults() {
     track('email_captured', {
       email: email || 'skipped',
       location: location?.address,
-      Clinic_shown: Clinic.length
+      clinics_shown: clinics.length
     });
   };
 
@@ -155,31 +147,31 @@ export function DoctorResults() {
 
   const handleSortChange = (newSortBy: 'distance' | 'rating' | 'availability') => {
     setSortBy(newSortBy);
-    const sortedClinic = sortClinic(Clinic, newSortBy);
-    setClinic(sortedClinic);
+    const sortedClinics = sortClinics(clinics, newSortBy);
+    setClinics(sortedClinics);
     
-    track('doctor_results_sorted', {
+    track('clinic_results_sorted', {
       sort_by: newSortBy,
       location: location?.address,
-      Clinic_count: Clinic.length
+      clinic_count: clinics.length
     });
   };
 
   const handleSpecialtyFilter = (specialty: string) => {
     setSpecialtyFilter(specialty);
     if (location) {
-      fetchClinic(location);
+      fetchClinics(location);
     }
     
-    track('doctor_results_filtered', {
+    track('clinic_results_filtered', {
       specialty_filter: specialty || 'all',
       location: location?.address
     });
   };
 
-  // Get unique specialties for filter dropdown
-  const availableSpecialties = [...new Set(
-    Clinic.flatMap(doctor => doctor.specialties)
+  // Get unique services for filter dropdown
+  const availableServices = [...new Set(
+    clinics.flatMap(clinic => clinic.services)
   )].sort();
 
   if (loading) {
@@ -243,19 +235,19 @@ export function DoctorResults() {
       {showEmailCapture && (
         <EmailCapture
           onSubmit={handleEmailSubmit}
-          doctorCount={Clinic.length}
+          clinicCount={clinics.length}
           location={location?.address || 'your area'}
         />
       )}
 
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {Clinic.length === 0 ? (
+        {clinics.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🦷</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No dentists found</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No dental clinics found</h3>
             <p className="text-gray-600 mb-6">
-              We couldn't find any verified dentists in this area yet.
+              We couldn't find any verified dental clinics in this area yet.
             </p>
             <Button onClick={handleReturnToSearch}>
               Try Different Location
@@ -267,9 +259,9 @@ export function DoctorResults() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {Clinic.length} Dentist{Clinic.length !== 1 ? 's' : ''} Found
+                  {clinics.length} Dental Clinic{clinics.length !== 1 ? 's' : ''} Found
                 </h2>
-                <p className="text-gray-600">All dentists are verified and accepting new patients</p>
+                <p className="text-gray-600">All clinics are verified and accepting new patients</p>
               </div>
               
               {/* Filters and Sort */}
@@ -277,17 +269,17 @@ export function DoctorResults() {
                 {/* Specialty Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Specialty:
+                    Service:
                   </label>
                   <select 
                     value={specialtyFilter}
                     onChange={(e) => handleSpecialtyFilter(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[150px]"
                   >
-                    <option value="">All Specialties</option>
-                    {availableSpecialties.map((specialty) => (
-                      <option key={specialty} value={specialty}>
-                        {specialty}
+                    <option value="">All Services</option>
+                    {availableServices.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
                       </option>
                     ))}
                   </select>
@@ -331,12 +323,12 @@ export function DoctorResults() {
               </div>
             )}
 
-            {/* Doctor Cards */}
+            {/* Clinic Cards */}
             <div className={`grid gap-6 ${showEmailCapture ? 'filter blur-sm pointer-events-none' : ''}`}>
-              {Clinic.map((doctor, index) => (
-                <DoctorCard
-                  key={doctor._id} 
-                  doctor={doctor} 
+              {clinics.map((clinic, index) => (
+                <ClinicCard
+                  key={clinic._id} 
+                  clinic={clinic} 
                   index={index}
                   userEmail={userEmail}
                 />
@@ -344,7 +336,7 @@ export function DoctorResults() {
             </div>
 
             {/* Bottom CTA */}
-            {!showEmailCapture && Clinic.length > 0 && (
+            {!showEmailCapture && clinics.length > 0 && (
               <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-center">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   Ready to Book Your Appointment?
