@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { CreateClinicForm } from './CreateClinicForm';
 
 import { ViewClinics } from './ViewClinics';
-import { ViewDoctors } from './ViewDoctors';
+
 
 type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors';
 
@@ -36,8 +36,7 @@ export function AdminDashboard() {
    
       case 'view-clinics':
         return <ViewClinics />;
-      case 'view-doctors':
-        return <ViewDoctors />;
+  
       default:
         return <CreateClinicForm />;
     }

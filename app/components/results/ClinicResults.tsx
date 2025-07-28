@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useSimpleTracking } from '../AnalyticsProvider';
 import { Button } from '@/components/ui/button';
 import { EmailCapture } from './EmailCapture';
-import { DoctorCard } from './DoctorCard';
+import { DoctorCard } from './ClinicCard';
 
 interface Doctor {
   _id: string;
@@ -35,7 +35,7 @@ interface LocationData {
 }
 
 export function DoctorResults() {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [Clinic, setClinic] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEmailCapture, setShowEmailCapture] = useState(true);
@@ -51,7 +51,7 @@ export function DoctorResults() {
     if (savedLocation) {
       const locationData = JSON.parse(savedLocation);
       setLocation(locationData);
-      fetchDoctors(locationData);
+      fetchClinic(locationData);
     } else {
       setError('No search location found. Please search again.');
       setLoading(false);
@@ -65,7 +65,7 @@ export function DoctorResults() {
     }
   }, []);
 
-  const fetchDoctors = async (locationData: LocationData) => {
+  const fetchClinic = async (locationData: LocationData) => {
     try {
       setLoading(true);
       
@@ -79,7 +79,7 @@ export function DoctorResults() {
         params.append('specialty', specialtyFilter);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/doctors?${params}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/Clinic?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -88,27 +88,27 @@ export function DoctorResults() {
       const data = await response.json();
       
       if (data.success) {
-        // Filter for active and verified doctors only
-        const activeDoctors = data.data.doctors.filter((doctor: Doctor) => 
+        // Filter for active and verified Clinic only
+        const activeClinic = data.data.Clinic.filter((doctor: Doctor) => 
           doctor.status === 'active' && doctor.verified
         );
         
-        // Sort doctors based on sortBy criteria
-        const sortedDoctors = sortDoctors(activeDoctors, sortBy);
-        setDoctors(sortedDoctors);
+        // Sort Clinic based on sortBy criteria
+        const sortedClinic = sortClinic(activeClinic, sortBy);
+        setClinic(sortedClinic);
         
         track('doctor_results_loaded', {
           location: locationData.address,
-          doctors_count: sortedDoctors.length,
+          Clinic_count: sortedClinic.length,
           specialty_filter: specialtyFilter || 'all',
           sort_by: sortBy
         });
       } else {
-        throw new Error(data.message || 'Failed to fetch doctors');
+        throw new Error(data.message || 'Failed to fetch Clinic');
       }
     } catch (err: any) {
-      console.error('Error fetching doctors:', err);
-      setError(`Failed to load doctors: ${err.message}. Please try again.`);
+      console.error('Error fetching Clinic:', err);
+      setError(`Failed to load Clinic: ${err.message}. Please try again.`);
       track('doctor_results_error', {
         error: err.message,
         location: locationData.address
@@ -118,7 +118,7 @@ export function DoctorResults() {
     }
   };
 
-  const sortDoctors = (doctorList: Doctor[], sortBy: string) => {
+  const sortClinic = (doctorList: Doctor[], sortBy: string) => {
     switch (sortBy) {
       case 'rating':
         // For now, random sort since we don't have ratings yet
@@ -143,7 +143,7 @@ export function DoctorResults() {
     track('email_captured', {
       email: email || 'skipped',
       location: location?.address,
-      doctors_shown: doctors.length
+      Clinic_shown: Clinic.length
     });
   };
 
@@ -155,20 +155,20 @@ export function DoctorResults() {
 
   const handleSortChange = (newSortBy: 'distance' | 'rating' | 'availability') => {
     setSortBy(newSortBy);
-    const sortedDoctors = sortDoctors(doctors, newSortBy);
-    setDoctors(sortedDoctors);
+    const sortedClinic = sortClinic(Clinic, newSortBy);
+    setClinic(sortedClinic);
     
     track('doctor_results_sorted', {
       sort_by: newSortBy,
       location: location?.address,
-      doctors_count: doctors.length
+      Clinic_count: Clinic.length
     });
   };
 
   const handleSpecialtyFilter = (specialty: string) => {
     setSpecialtyFilter(specialty);
     if (location) {
-      fetchDoctors(location);
+      fetchClinic(location);
     }
     
     track('doctor_results_filtered', {
@@ -179,7 +179,7 @@ export function DoctorResults() {
 
   // Get unique specialties for filter dropdown
   const availableSpecialties = [...new Set(
-    doctors.flatMap(doctor => doctor.specialties)
+    Clinic.flatMap(doctor => doctor.specialties)
   )].sort();
 
   if (loading) {
@@ -243,14 +243,14 @@ export function DoctorResults() {
       {showEmailCapture && (
         <EmailCapture
           onSubmit={handleEmailSubmit}
-          doctorCount={doctors.length}
+          doctorCount={Clinic.length}
           location={location?.address || 'your area'}
         />
       )}
 
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {doctors.length === 0 ? (
+        {Clinic.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🦷</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No dentists found</h3>
@@ -267,7 +267,7 @@ export function DoctorResults() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {doctors.length} Dentist{doctors.length !== 1 ? 's' : ''} Found
+                  {Clinic.length} Dentist{Clinic.length !== 1 ? 's' : ''} Found
                 </h2>
                 <p className="text-gray-600">All dentists are verified and accepting new patients</p>
               </div>
@@ -333,7 +333,7 @@ export function DoctorResults() {
 
             {/* Doctor Cards */}
             <div className={`grid gap-6 ${showEmailCapture ? 'filter blur-sm pointer-events-none' : ''}`}>
-              {doctors.map((doctor, index) => (
+              {Clinic.map((doctor, index) => (
                 <DoctorCard
                   key={doctor._id} 
                   doctor={doctor} 
@@ -344,7 +344,7 @@ export function DoctorResults() {
             </div>
 
             {/* Bottom CTA */}
-            {!showEmailCapture && doctors.length > 0 && (
+            {!showEmailCapture && Clinic.length > 0 && (
               <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-center">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   Ready to Book Your Appointment?

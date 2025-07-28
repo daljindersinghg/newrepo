@@ -3,7 +3,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ITreatment extends Document {
   appointment: mongoose.Types.ObjectId;
   patient: mongoose.Types.ObjectId;
-  doctor: mongoose.Types.ObjectId;
   
   treatmentName: string;
   description?: string;
@@ -41,7 +40,6 @@ export interface ITreatment extends Document {
 const TreatmentSchema: Schema = new Schema({
   appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment', required: true },
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
   
   treatmentName: { type: String, required: true },
   description: { type: String },
@@ -86,7 +84,6 @@ const TreatmentSchema: Schema = new Schema({
 
 // Indexes
 TreatmentSchema.index({ patient: 1, startDate: -1 });
-TreatmentSchema.index({ doctor: 1, startDate: -1 });
 TreatmentSchema.index({ status: 1 });
 
 // Auto-update updatedAt

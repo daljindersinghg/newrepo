@@ -2,7 +2,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IReview extends Document {
   patient: mongoose.Types.ObjectId;
-  doctor: mongoose.Types.ObjectId;
   clinic: mongoose.Types.ObjectId;
   appointment?: mongoose.Types.ObjectId;
   
@@ -23,7 +22,7 @@ export interface IReview extends Document {
   
   response?: {
     text: string;
-    respondedBy: mongoose.Types.ObjectId; // doctor or admin
+    respondedBy: mongoose.Types.ObjectId; // admin
     respondedAt: Date;
   };
   
@@ -37,7 +36,6 @@ export interface IReview extends Document {
 
 const ReviewSchema: Schema = new Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
   clinic: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic', required: true },
   appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
   
@@ -58,8 +56,7 @@ const ReviewSchema: Schema = new Schema({
   
   response: {
     text: String,
-    respondedBy: { type: mongoose.Schema.Types.ObjectId, refPath: 'response.respondedByModel' },
-    respondedByModel: { type: String, enum: ['Doctor', 'Admin'] },
+    respondedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
     respondedAt: Date
   },
   
@@ -72,7 +69,6 @@ const ReviewSchema: Schema = new Schema({
 });
 
 // Indexes
-ReviewSchema.index({ doctor: 1, isPublic: 1, isApproved: 1 });
 ReviewSchema.index({ clinic: 1, isPublic: 1, isApproved: 1 });
 ReviewSchema.index({ patient: 1 });
 ReviewSchema.index({ rating: 1 });

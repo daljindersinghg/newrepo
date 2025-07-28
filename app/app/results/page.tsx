@@ -1,6 +1,6 @@
 // app/results/page.tsx
 import { Metadata } from 'next';
-import { DoctorResults } from '@/components/results/DoctorResults';
+import { DoctorResults } from '@/components/results/ClinicResults';
 
 export const metadata: Metadata = {
   title: 'Find Dentists Near You | DentalCare+',
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ResultsPage() {
-  return <DoctorResults />;
+  return <ClinicResults />;
 }

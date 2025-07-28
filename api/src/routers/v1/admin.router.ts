@@ -1,7 +1,6 @@
 // api/src/routers/v1/admin.router.ts
 import express from "express";
 import { AdminController } from "../../controllers/admin.controller";
-import { DoctorController } from "../../controllers/doctor.controller";
 import { ClinicController } from "../../controllers/clinic.controller";
 
 const adminRouter = express.Router();
@@ -27,16 +26,6 @@ adminRouter.post("/clinics/bulk-sync", ClinicController.bulkSyncClinics);
 adminRouter.put("/clinics/:id", ClinicController.updateClinic);
 adminRouter.delete("/clinics/:id", ClinicController.deleteClinic);
 adminRouter.post("/clinics/:id/sync-google", ClinicController.syncClinicWithGoogle);
-
-// Doctor Management
-adminRouter.get("/doctors", DoctorController.getDoctors);
-adminRouter.post("/doctors", DoctorController.createDoctor);
-adminRouter.get("/doctors/:id", DoctorController.getDoctor);
-adminRouter.put("/doctors/:id", DoctorController.updateDoctor);
-adminRouter.delete("/doctors/:id", DoctorController.deleteDoctor);
-
-// Clinic-Doctor relationship
-adminRouter.get("/clinics/:clinicId/doctors", DoctorController.getDoctorsByClinic);
 
 // ============ PARAMETERIZED ROUTES LAST ============
 // These MUST come AFTER all specific routes

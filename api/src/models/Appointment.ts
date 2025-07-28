@@ -2,7 +2,6 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IAppointment extends Document {
   patient: mongoose.Types.ObjectId;
-  doctor: mongoose.Types.ObjectId;
   clinic: mongoose.Types.ObjectId;
   
   appointmentDate: Date;
@@ -35,7 +34,6 @@ export interface IAppointment extends Document {
 
 const AppointmentSchema: Schema = new Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
-  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Doctor', required: true },
   clinic: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic', required: true },
   
   appointmentDate: { type: Date, required: true },
@@ -76,7 +74,6 @@ const AppointmentSchema: Schema = new Schema({
 
 // Indexes for efficient queries
 AppointmentSchema.index({ patient: 1, appointmentDate: 1 });
-AppointmentSchema.index({ doctor: 1, appointmentDate: 1 });
 AppointmentSchema.index({ clinic: 1, appointmentDate: 1 });
 AppointmentSchema.index({ status: 1 });
 
