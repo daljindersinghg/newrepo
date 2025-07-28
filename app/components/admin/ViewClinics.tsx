@@ -49,7 +49,7 @@ export function ViewClinics() {
         params.append('search', search);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/clinics?${params}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/clinics`);
       const data: ApiResponse = await response.json();
 
       if (response.ok && data.success) {

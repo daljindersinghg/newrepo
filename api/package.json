@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/server.ts",
+     "dev2": "nodemon --exec 'node --no-cache -r ts-node/register src/server.ts'",
     "dev": "nodemon src/server.ts",
     "build": "tsc"
   },
