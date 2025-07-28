@@ -1,4 +1,4 @@
-// apps/api/src/services/doctor.service.ts
+// api/src/services/doctor.service.ts
 import { Doctor, IDoctor, Clinic } from '../models';
 import logger from '../config/logger.config';
 
@@ -54,13 +54,13 @@ export class DoctorService {
   }
 
   /**
-   * Get doctor by ID
+   * Get doctor by ID with clinic details
    */
   static async getDoctorById(id: string): Promise<IDoctor | null> {
     try {
       const doctor = await Doctor.findById(id)
         .select('-password')
-        .populate('clinic', 'name address phone');
+        .populate('clinic', 'name address phone email website services');
       return doctor;
     } catch (error: any) {
       logger.error(`Error fetching doctor ${id}:`, error);
@@ -69,7 +69,7 @@ export class DoctorService {
   }
 
   /**
-   * Get all doctors with filters and pagination
+   * Get all doctors with filters, pagination, and clinic details
    */
   static async getDoctors(page: number = 1, limit: number = 10, filters: DoctorFilters = {}) {
     try {
@@ -97,7 +97,7 @@ export class DoctorService {
       const [doctors, total] = await Promise.all([
         Doctor.find(query)
           .select('-password')
-          .populate('clinic', 'name address phone')
+          .populate('clinic', 'name address phone email website services')
           .skip(skip)
           .limit(limit)
           .sort({ createdAt: -1 }),
@@ -120,6 +120,38 @@ export class DoctorService {
   }
 
   /**
+   * Get doctors by clinic ID
+   */
+  static async getDoctorsByClinic(clinicId: string, page: number = 1, limit: number = 10) {
+    try {
+      const skip = (page - 1) * limit;
+      
+      const [doctors, total] = await Promise.all([
+        Doctor.find({ clinic: clinicId, status: 'active', verified: true })
+          .select('-password')
+          .populate('clinic', 'name address phone email website services')
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: -1 }),
+        Doctor.countDocuments({ clinic: clinicId, status: 'active', verified: true })
+      ]);
+
+      return {
+        doctors,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error: any) {
+      logger.error(`Error fetching doctors for clinic ${clinicId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Update doctor
    */
   static async updateDoctor(id: string, updateData: Partial<IDoctor>): Promise<IDoctor | null> {
@@ -133,7 +165,7 @@ export class DoctorService {
         id,
         sanitizedData,
         { new: true, runValidators: true }
-      ).select('-password').populate('clinic', 'name address phone');
+      ).select('-password').populate('clinic', 'name address phone email website services');
 
       if (doctor) {
         logger.info(`Doctor updated: ${id}`);
@@ -174,7 +206,7 @@ export class DoctorService {
         id,
         { status },
         { new: true, runValidators: true }
-      ).select('-password').populate('clinic', 'name address phone');
+      ).select('-password').populate('clinic', 'name address phone email website services');
 
       if (doctor) {
         logger.info(`Doctor status updated: ${id} -> ${status}`);
@@ -183,6 +215,37 @@ export class DoctorService {
       return doctor;
     } catch (error: any) {
       logger.error(`Error updating doctor status ${id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available doctors for appointment booking
+   */
+  static async getAvailableDoctors(filters: {
+    location?: { lat: number; lng: number; radius?: number };
+    specialty?: string;
+    date?: Date;
+    insuranceAccepted?: string[];
+  }) {
+    try {
+      const query: any = {
+        status: 'active',
+        verified: true
+      };
+
+      if (filters.specialty) {
+        query.specialties = { $in: [new RegExp(filters.specialty, 'i')] };
+      }
+
+      const doctors = await Doctor.find(query)
+        .select('-password')
+        .populate('clinic', 'name address phone email website services')
+        .sort({ createdAt: -1 });
+
+      return doctors;
+    } catch (error: any) {
+      logger.error('Error fetching available doctors:', error);
       throw error;
     }
   }

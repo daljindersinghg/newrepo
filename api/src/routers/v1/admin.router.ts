@@ -1,4 +1,4 @@
-
+// api/src/routers/v1/admin.router.ts
 import express from "express";
 import { AdminController } from "../../controllers/admin.controller";
 import { DoctorController } from "../../controllers/doctor.controller";
@@ -18,6 +18,9 @@ adminRouter.get("/doctors", DoctorController.getDoctors);
 adminRouter.get("/doctors/:id", DoctorController.getDoctor);
 adminRouter.put("/doctors/:id", DoctorController.updateDoctor);
 adminRouter.delete("/doctors/:id", DoctorController.deleteDoctor);
+
+// Get doctors by clinic
+adminRouter.get("/clinics/:clinicId/doctors", DoctorController.getDoctorsByClinic);
 
 // Clinic Management (Admin only)
 adminRouter.post("/clinics", ClinicController.createClinic);

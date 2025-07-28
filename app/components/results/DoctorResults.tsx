@@ -1,8 +1,7 @@
-// components/results/DoctorResults.tsx
+// app/components/results/DoctorResults.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-
 import { useSimpleTracking } from '../AnalyticsProvider';
 import { Button } from '@/components/ui/button';
 import { EmailCapture } from './EmailCapture';
@@ -42,6 +41,8 @@ export function DoctorResults() {
   const [showEmailCapture, setShowEmailCapture] = useState(true);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'availability'>('distance');
+  const [specialtyFilter, setSpecialtyFilter] = useState<string>('');
   const { track } = useSimpleTracking();
 
   useEffect(() => {
@@ -68,44 +69,79 @@ export function DoctorResults() {
     try {
       setLoading(true);
       
-      // For now, fetch all doctors since we don't have location-based filtering in API yet
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/doctors?limit=50`);
+      // Build query parameters
+      const params = new URLSearchParams({
+        limit: '50',
+        status: 'active'
+      });
+
+      if (specialtyFilter) {
+        params.append('specialty', specialtyFilter);
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/doctors?${params}`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch doctors');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
       
       if (data.success) {
-        // Filter active doctors only
+        // Filter for active and verified doctors only
         const activeDoctors = data.data.doctors.filter((doctor: Doctor) => 
           doctor.status === 'active' && doctor.verified
         );
-        setDoctors(activeDoctors);
+        
+        // Sort doctors based on sortBy criteria
+        const sortedDoctors = sortDoctors(activeDoctors, sortBy);
+        setDoctors(sortedDoctors);
         
         track('doctor_results_loaded', {
           location: locationData.address,
-          doctors_count: activeDoctors.length
+          doctors_count: sortedDoctors.length,
+          specialty_filter: specialtyFilter || 'all',
+          sort_by: sortBy
         });
       } else {
         throw new Error(data.message || 'Failed to fetch doctors');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching doctors:', err);
-      setError('Failed to load doctors. Please try again.');
+      setError(`Failed to load doctors: ${err.message}. Please try again.`);
+      track('doctor_results_error', {
+        error: err.message,
+        location: locationData.address
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sortDoctors = (doctorList: Doctor[], sortBy: string) => {
+    switch (sortBy) {
+      case 'rating':
+        // For now, random sort since we don't have ratings yet
+        return [...doctorList].sort(() => Math.random() - 0.5);
+      case 'availability':
+        // For now, random sort since we don't have availability data yet
+        return [...doctorList].sort(() => Math.random() - 0.5);
+      case 'distance':
+      default:
+        // For now, keep original order (could implement actual distance sorting later)
+        return doctorList;
     }
   };
 
   const handleEmailSubmit = (email: string) => {
     setUserEmail(email);
     setShowEmailCapture(false);
-    localStorage.setItem('userEmail', email);
+    if (email) {
+      localStorage.setItem('userEmail', email);
+    }
     
     track('email_captured', {
-      email,
+      email: email || 'skipped',
       location: location?.address,
       doctors_shown: doctors.length
     });
@@ -113,8 +149,38 @@ export function DoctorResults() {
 
   const handleReturnToSearch = () => {
     localStorage.removeItem('searchLocation');
+    localStorage.removeItem('userEmail');
     window.location.href = '/';
   };
+
+  const handleSortChange = (newSortBy: 'distance' | 'rating' | 'availability') => {
+    setSortBy(newSortBy);
+    const sortedDoctors = sortDoctors(doctors, newSortBy);
+    setDoctors(sortedDoctors);
+    
+    track('doctor_results_sorted', {
+      sort_by: newSortBy,
+      location: location?.address,
+      doctors_count: doctors.length
+    });
+  };
+
+  const handleSpecialtyFilter = (specialty: string) => {
+    setSpecialtyFilter(specialty);
+    if (location) {
+      fetchDoctors(location);
+    }
+    
+    track('doctor_results_filtered', {
+      specialty_filter: specialty || 'all',
+      location: location?.address
+    });
+  };
+
+  // Get unique specialties for filter dropdown
+  const availableSpecialties = [...new Set(
+    doctors.flatMap(doctor => doctor.specialties)
+  )].sort();
 
   if (loading) {
     return (
@@ -197,8 +263,8 @@ export function DoctorResults() {
           </div>
         ) : (
           <>
-            {/* Results Header */}
-            <div className="flex items-center justify-between mb-6">
+            {/* Results Header with Filters */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   {doctors.length} Dentist{doctors.length !== 1 ? 's' : ''} Found
@@ -206,15 +272,64 @@ export function DoctorResults() {
                 <p className="text-gray-600">All dentists are verified and accepting new patients</p>
               </div>
               
-              {/* Filters - Future Enhancement */}
-              <div className="flex items-center gap-4">
-                <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                  <option>Sort by: Distance</option>
-                  <option>Sort by: Rating</option>
-                  <option>Sort by: Availability</option>
-                </select>
+              {/* Filters and Sort */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                {/* Specialty Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Specialty:
+                  </label>
+                  <select 
+                    value={specialtyFilter}
+                    onChange={(e) => handleSpecialtyFilter(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[150px]"
+                  >
+                    <option value="">All Specialties</option>
+                    {availableSpecialties.map((specialty) => (
+                      <option key={specialty} value={specialty}>
+                        {specialty}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Sort Options */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sort by:
+                  </label>
+                  <select 
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value as 'distance' | 'rating' | 'availability')}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[150px]"
+                  >
+                    <option value="distance">Distance</option>
+                    <option value="rating">Rating</option>
+                    <option value="availability">Availability</option>
+                  </select>
+                </div>
               </div>
             </div>
+
+            {/* Active Filters Display */}
+            {specialtyFilter && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Active filters:</span>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2">
+                    {specialtyFilter}
+                    <button 
+                      onClick={() => handleSpecialtyFilter('')}
+                      className="hover:bg-blue-200 rounded-full p-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Doctor Cards */}
             <div className={`grid gap-6 ${showEmailCapture ? 'filter blur-sm pointer-events-none' : ''}`}>
@@ -237,7 +352,7 @@ export function DoctorResults() {
                 <p className="text-gray-600 mb-6">
                   Get your $50 gift card after your first visit through our platform
                 </p>
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-wrap items-center justify-center gap-6">
                   <div className="flex items-center text-green-600">
                     <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
