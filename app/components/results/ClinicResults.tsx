@@ -101,10 +101,7 @@ export function ClinicResults() {
     } catch (err: any) {
       console.error('Error fetching Clinic:', err);
       setError(`Failed to load Clinic: ${err.message}. Please try again.`);
-      track('doctor_results_error', {
-        error: err.message,
-        location: locationData.address
-      });
+ 
     } finally {
       setLoading(false);
     }

@@ -248,7 +248,7 @@ export class ClinicService {
   static  async getClinics(page: number = 1, limit: number = 10, filters: ClinicFilters = {}) {
     try {
 
-      console.log("-----")
+      console.log("-----251")
       const skip = (page - 1) * limit;
       const query: any = {};
 
