@@ -20,21 +20,13 @@ export function AdminDashboard() {
       label: 'Add Clinic',
       icon: '🏥'
     },
-    {
-      id: 'add-doctor' as TabType,
-      label: 'Add Doctor', 
-      icon: '👨‍⚕️'
-    },
+
     {
       id: 'view-clinics' as TabType,
       label: 'View Clinics',
       icon: '🏢'
     },
-    {
-      id: 'view-doctors' as TabType,
-      label: 'View Doctors',
-      icon: '👥'
-    }
+
   ];
 
   const renderContent = () => {

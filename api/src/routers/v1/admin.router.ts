@@ -23,7 +23,7 @@ adminRouter.get("/google-places/search", ClinicController.searchGooglePlaces);
 adminRouter.post("/clinics/bulk-sync", ClinicController.bulkSyncClinics);
 
 // Clinic routes with parameters
-adminRouter.get("/clinics/:id", ClinicController.getClinic);
+// adminRouter.get("/clinics/:id", ClinicController.getClinic);
 adminRouter.put("/clinics/:id", ClinicController.updateClinic);
 adminRouter.delete("/clinics/:id", ClinicController.deleteClinic);
 adminRouter.post("/clinics/:id/sync-google", ClinicController.syncClinicWithGoogle);

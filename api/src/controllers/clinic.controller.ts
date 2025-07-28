@@ -222,24 +222,13 @@ export class ClinicController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
-         const city = req.query.city as string;
-      const state = req.query.state as string;
-      const verified = req.query.verified === 'true' ? true : req.query.verified === 'false' ? false : undefined;
-      const services = req.query.services ? (req.query.services as string).split(',') : undefined;
 
-  const filters = { 
-        search, 
-        city, 
-        state, 
-        verified, 
-        services 
-      };
+      const filters = { search };
       const result = await ClinicService.getClinics(page, limit, filters);
-     res.json({
+
+      res.json({
         success: true,
-        message: `Found ${result.clinics.length} clinics`,
-        data: result,
-        filters: filters // Return applied filters for frontend reference
+        data: result
       });
     } catch (error) {
       console.log(Error)
