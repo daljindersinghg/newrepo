@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { CreateClinicForm } from './CreateClinicForm';
-import { CreateDoctorForm } from './CreateDoctorForm';
+
 import { ViewClinics } from './ViewClinics';
 import { ViewDoctors } from './ViewDoctors';
 
@@ -41,8 +41,7 @@ export function AdminDashboard() {
     switch (activeTab) {
       case 'add-clinic':
         return <CreateClinicForm />;
-      case 'add-doctor':
-        return <CreateDoctorForm />;
+   
       case 'view-clinics':
         return <ViewClinics />;
       case 'view-doctors':
