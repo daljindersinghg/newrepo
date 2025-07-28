@@ -1,7 +1,7 @@
 // apps/web/components/admin/layout/AdminSidebar.tsx
 'use client';
 
-import { AdminTab } from '../AdminDashboard';
+type AdminTab = 'overview' | 'add-doctor' | 'add-clinic' | 'doctors' | 'clinics' | 'users' | 'analytics' | 'settings';
 
 interface AdminSidebarProps {
   activeTab: AdminTab;

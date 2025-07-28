@@ -1,15 +1,15 @@
 // apps/web/components/admin/layout/AdminHeader.tsx
 'use client';
 
-import { AdminTab } from '../AdminDashboard';
+
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
-  activeTab: AdminTab;
+  activeTab: any;
 }
 
 export function AdminHeader({ onMenuClick, activeTab }: AdminHeaderProps) {
-  const getTabTitle = (tab: AdminTab): string => {
+  const getTabTitle = (tab: any): string => {
     switch (tab) {
       case 'overview': return 'Dashboard Overview';
       case 'add-doctor': return 'Add New Doctor';

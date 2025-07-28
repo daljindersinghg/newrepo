@@ -126,7 +126,7 @@ const DentalQuestionnaire = () => {
     }
   };
 
-  const handleOptionSelect = (optionId, isMultiple = false) => {
+  const handleOptionSelect = (optionId :any, isMultiple = false) => {
     if (isMultiple) {
       const currentPrefs = formData.preferences || [];
       const newPrefs = currentPrefs.includes(optionId)
