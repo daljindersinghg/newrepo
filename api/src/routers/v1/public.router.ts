@@ -10,6 +10,6 @@ const publicRouter = express.Router();
 // Public clinic endpoints
 publicRouter.get("/clinics", ClinicController.getClinics);
 publicRouter.get("/clinics/:id", ClinicController.getClinic);
-publicRouter.get("/clinics/:clinicId/doctors", DoctorController.getDoctorsByClinic);
+
 
 export default publicRouter;
