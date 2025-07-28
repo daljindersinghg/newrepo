@@ -15,9 +15,58 @@ interface Clinic {
   email: string;
   website?: string;
   services: string[];
-  status: 'active' | 'pending' | 'suspended';
-  verified: boolean;
+  acceptedInsurance?: string[];
+  hours?: {
+    monday?: string;
+    tuesday?: string;
+    wednesday?: string;
+    thursday?: string;
+    friday?: string;
+    saturday?: string;
+    sunday?: string;
+  };
+  location?: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  locationDetails?: {
+    latitude: number;
+    longitude: number;
+    placeId: string;
+    formattedAddress: string;
+    addressComponents: {
+      streetNumber?: string;
+      route?: string;
+      locality?: string;
+      administrativeAreaLevel1?: string;
+      administrativeAreaLevel2?: string;
+      country?: string;
+      postalCode?: string;
+    };
+    viewport?: {
+      northeast: { lat: number; lng: number };
+      southwest: { lat: number; lng: number };
+    };
+    businessInfo?: {
+      businessStatus?: string;
+      placeTypes?: string[];
+      website?: string;
+      phoneNumber?: string;
+    };
+  };
+  searchableAddress?: string[];
+  
+  // Verification fields - match your actual data
+  isVerified?: boolean;      // Your DB has this field
+  verificationDate?: string; // Your DB has this field
+  
+  // Rating fields - your DB has these
+  rating?: number;
+  reviewCount?: number;
+  
+  // Audit fields
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface LocationData {
@@ -27,7 +76,7 @@ interface LocationData {
 }
 
 export function ClinicResults() {
-  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [clinics, setClinics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEmailCapture, setShowEmailCapture] = useState(true);
@@ -82,7 +131,7 @@ export function ClinicResults() {
       if (data.success) {
         // Filter for active and verified clinics only
         const activeClinics = data.data.clinics.filter((clinic: Clinic) => 
-          clinic.status === 'active' && clinic.verified
+          clinic.isVerified == true
         );
         
         // Sort clinics based on sortBy criteria

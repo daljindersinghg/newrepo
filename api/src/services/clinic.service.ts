@@ -1,6 +1,5 @@
 // api/src/services/clinic.service.ts (Fixed version)
 import { Clinic, IClinic } from '../models';
-import logger from '../config/logger.config';
 import { GooglePlacesService } from './googlePlaces.service';
 
 interface ClinicFilters {
@@ -69,10 +68,8 @@ export class ClinicService {
       const clinic = new Clinic(clinicData);
       await clinic.save();
 
-      logger.info(`Clinic created from Google Places: ${clinic._id} - ${clinic.name}`);
       return clinic;
     } catch (error: any) {
-      logger.error('Error creating clinic from Google Places:', error);
       throw error;
     }
   }
@@ -116,10 +113,8 @@ export class ClinicService {
       const clinic = new Clinic(clinicData);
       await clinic.save();
 
-      logger.info(`Clinic created: ${clinic._id} - ${clinic.name}`);
       return clinic;
     } catch (error: any) {
-      logger.error('Error creating clinic:', error);
       throw error;
     }
   }
@@ -163,10 +158,8 @@ export class ClinicService {
         { new: true, runValidators: true }
       );
 
-      logger.info(`Clinic synced with Google Places: ${clinicId}`);
       return updatedClinic;
     } catch (error: any) {
-      logger.error(`Error syncing clinic ${clinicId} with Google Places:`, error);
       throw error;
     }
   }
@@ -197,10 +190,8 @@ export class ClinicService {
         }
       }
 
-      logger.info(`Bulk sync completed: ${success} success, ${failed} failed`);
       return { success, failed, errors };
     } catch (error: any) {
-      logger.error('Error in bulk sync:', error);
       throw error;
     }
   }
@@ -224,7 +215,6 @@ export class ClinicService {
 
       return dentalResults;
     } catch (error: any) {
-      logger.error('Error searching Google Places for clinics:', error);
       throw error;
     }
   }
@@ -237,7 +227,6 @@ export class ClinicService {
       const clinic = await Clinic.findById(id);
       return clinic;
     } catch (error: any) {
-      logger.error(`Error fetching clinic ${id}:`, error);
       throw error;
     }
   }
@@ -301,12 +290,11 @@ export class ClinicService {
       );
 
       if (clinic) {
-        logger.info(`Clinic updated: ${id}`);
+        return clinic;
       }
 
       return clinic;
     } catch (error: any) {
-      logger.error(`Error updating clinic ${id}:`, error);
       throw error;
     }
   }
@@ -319,13 +307,11 @@ export class ClinicService {
       const clinic = await Clinic.findByIdAndDelete(id);
       
       if (clinic) {
-        logger.info(`Clinic deleted: ${id}`);
         return true;
       }
       
       return false;
     } catch (error: any) {
-      logger.error(`Error deleting clinic ${id}:`, error);
       throw error;
     }
   }

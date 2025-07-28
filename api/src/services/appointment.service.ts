@@ -1,4 +1,6 @@
-import { IAppointment, Appointment } from "../models";
+import { Appointment, IAppointment } from "../models";
+
+export class AppointmentService {rt { IAppointment, Appointment } from "../models";
 import logger from "../config/logger.config";
 
 export class AppointmentService {
@@ -17,10 +19,8 @@ export class AppointmentService {
       }
       // Create new appointment
       const appointment = await Appointment.create(appointmentdata);
-      logger.info(`New appointment created: ${appointment._id}`);
       return appointment;
     } catch (error: any) {
-      logger.error("Error creating appointment:", error);
       throw new Error(error.message);
     }
   }
@@ -33,7 +33,6 @@ export class AppointmentService {
       }
       return appointment;
     } catch (error: any) {
-      logger.error("Error fetching appointment:", error);
       throw new Error(error.message);
     }
   }
