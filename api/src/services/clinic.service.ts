@@ -1,6 +1,7 @@
-// api/src/services/clinic.service.ts
+// api/src/services/clinic.service.ts (Fixed version)
 import { Clinic, IClinic } from '../models';
 import logger from '../config/logger.config';
+import { GooglePlacesService } from './googlePlaces.service';
 
 interface ClinicFilters {
   search?: string;
@@ -11,24 +12,77 @@ interface ClinicFilters {
   insurance?: string[];
   latitude?: number;
   longitude?: number;
-  radius?: number; // in meters
+  radius?: number;
   verified?: boolean;
 }
 
-interface LocationBounds {
-  swLat: number;
-  swLng: number;
-  neLat: number;
-  neLng: number;
+interface CreateClinicFromGoogleData {
+  placeId: string;
+  email: string;
+  acceptedInsurance?: string[];
 }
 
 export class ClinicService {
+  private static googlePlacesService = new GooglePlacesService();
+
   /**
-   * Create a new clinic with enhanced location data
+   * Create clinic with Google Places auto-population
+   */
+  static async createClinicFromGooglePlace(
+    { placeId, email, acceptedInsurance = [] }: CreateClinicFromGoogleData
+  ): Promise<IClinic> {
+    try {
+      // Get auto-populated data from Google Places
+      const googleData = await this.googlePlacesService.getClinicData(placeId);
+      if (!googleData) {
+        throw new Error('Could not fetch clinic data from Google Places');
+      }
+
+      // Check if clinic already exists by placeId
+      const existingClinic = await Clinic.findOne({ 
+        'locationDetails.placeId': placeId 
+      });
+      
+      if (existingClinic) {
+        throw new Error('Clinic with this Google Place ID already exists');
+      }
+
+      // Check if clinic already exists by email
+      //@ts-ignore
+      const existingEmailClinic = await Clinic.findOne({ email });
+      if (existingEmailClinic) {
+        throw new Error('Clinic with this email already exists');
+      }
+
+      // Merge Google data with manual data
+      const clinicData = {
+        ...googleData,
+        email, // Override with provided email
+        acceptedInsurance, // Override with provided insurance
+        // Set verification date if auto-verified
+        verificationDate: googleData.isVerified ? new Date() : undefined,
+        // Add sync tracking
+        lastGoogleSync: new Date(),
+        syncEnabled: true
+      };
+
+      const clinic = new Clinic(clinicData);
+      await clinic.save();
+
+      logger.info(`Clinic created from Google Places: ${clinic._id} - ${clinic.name}`);
+      return clinic;
+    } catch (error: any) {
+      logger.error('Error creating clinic from Google Places:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create clinic manually (original method, enhanced)
    */
   static async createClinic(clinicData: Partial<IClinic>): Promise<IClinic> {
     try {
-      // Check if clinic already exists
+      // Check if clinic already exists by email
       const existingClinic = await Clinic.findOne({ 
         email: clinicData.email 
       });
@@ -37,21 +91,32 @@ export class ClinicService {
         throw new Error('Clinic with this email already exists');
       }
 
-      // Validate location data if provided
-      if (clinicData.locationDetails) {
-        const { latitude, longitude } = clinicData.locationDetails;
-        
-        // Ensure location GeoJSON is properly formatted
-        clinicData.location = {
-          type: 'Point',
-          coordinates: [longitude, latitude]
-        };
+      // If location details with placeId are provided, enhance with Google data
+      if (clinicData.locationDetails?.placeId) {
+        const googleData = await this.googlePlacesService.getClinicData(clinicData.locationDetails.placeId);
+        if (googleData) {
+          // Merge manual data with Google data, giving priority to manual data
+          const mergedData = {
+            ...googleData,
+            ...clinicData,
+            // Keep manual data priority for these fields
+            name: clinicData.name || googleData.name,
+            email: clinicData.email!, // Email is required
+            services: clinicData.services || googleData.services,
+            acceptedInsurance: clinicData.acceptedInsurance || googleData.acceptedInsurance,
+            hours: { ...googleData.hours, ...clinicData.hours },
+            // Add sync tracking if Google Place ID exists
+            lastGoogleSync: new Date(),
+            syncEnabled: true
+          };
+          clinicData = mergedData;
+        }
       }
 
       const clinic = new Clinic(clinicData);
       await clinic.save();
 
-      logger.info(`New clinic created: ${clinic._id} at ${clinic.locationDetails?.formattedAddress}`);
+      logger.info(`Clinic created: ${clinic._id} - ${clinic.name}`);
       return clinic;
     } catch (error: any) {
       logger.error('Error creating clinic:', error);
@@ -60,7 +125,112 @@ export class ClinicService {
   }
 
   /**
-   * Get clinic by ID with location data
+   * Sync clinic data with Google Places
+   */
+  static async syncClinicWithGooglePlaces(clinicId: string): Promise<IClinic | null> {
+    try {
+      const clinic = await Clinic.findById(clinicId);
+      if (!clinic || !clinic.locationDetails?.placeId) {
+        throw new Error('Clinic not found or has no Google Place ID');
+      }
+
+      const googleData = await this.googlePlacesService.getClinicData(clinic.locationDetails.placeId);
+      if (!googleData) {
+        throw new Error('Could not fetch updated data from Google Places');
+      }
+
+      // Update only specific fields that should be synced
+      const updateData = {
+        // Update hours (most important for syncing)
+        hours: googleData.hours,
+        // Update contact info if changed
+        phone: googleData.phone || clinic.phone,
+        website: googleData.website || clinic.website,
+        // Update photos
+        photos: googleData.photos,
+        // Update rating and review count
+        rating: googleData.rating,
+        reviewCount: googleData.reviewCount,
+        // Update business status
+        'locationDetails.businessInfo.businessStatus': googleData.locationDetails.businessInfo?.businessStatus,
+        // Update last sync timestamp
+        lastGoogleSync: new Date()
+      };
+
+      const updatedClinic = await Clinic.findByIdAndUpdate(
+        clinicId,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      logger.info(`Clinic synced with Google Places: ${clinicId}`);
+      return updatedClinic;
+    } catch (error: any) {
+      logger.error(`Error syncing clinic ${clinicId} with Google Places:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk sync all clinics with Google Places data
+   */
+  static async bulkSyncClinics(): Promise<{ success: number; failed: number; errors: string[] }> {
+    try {
+      const clinics = await Clinic.find({
+        'locationDetails.placeId': { $exists: true, $ne: null }
+      });
+
+      let success = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (const clinic of clinics) {
+        try {
+   await this.syncClinicWithGooglePlaces(clinic._id as string);
+          success++;
+          
+          // Add delay to respect Google API rate limits
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error: any) {
+          failed++;
+          errors.push(`${clinic.name}: ${error.message}`);
+        }
+      }
+
+      logger.info(`Bulk sync completed: ${success} success, ${failed} failed`);
+      return { success, failed, errors };
+    } catch (error: any) {
+      logger.error('Error in bulk sync:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search Google Places for potential clinics
+   */
+  static async searchGooglePlacesForClinics(query: string, location?: { lat: number; lng: number }) {
+    try {
+      const results = await this.googlePlacesService.searchPlaces(query, location);
+      
+      // Filter for likely dental practices
+      const dentalResults = results.filter((place: any) => {
+        const name = place.name.toLowerCase();
+        const isDental = name.includes('dental') || 
+                        name.includes('dentist') || 
+                        name.includes('orthodontic') ||
+                        name.includes('oral');
+        return isDental;
+      });
+
+      return dentalResults;
+    } catch (error: any) {
+      logger.error('Error searching Google Places for clinics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get clinic by ID (existing method)
    */
   static async getClinicById(id: string): Promise<IClinic | null> {
     try {
@@ -73,201 +243,37 @@ export class ClinicService {
   }
 
   /**
-   * Find clinics near a specific location
+   * Get all clinics with pagination (existing method)
    */
-  static async findClinicsNearby(
-    latitude: number, 
-    longitude: number, 
-    radiusInMeters: number = 10000,
-    filters: Omit<ClinicFilters, 'latitude' | 'longitude' | 'radius'> = {}
-  ) {
-    try {
-      // Build base query for location
-      const query: any = {
-        location: {
-          $near: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [longitude, latitude]
-            },
-            $maxDistance: radiusInMeters
-          }
-        }
-      };
-
-      // Add additional filters
-      if (filters.verified !== undefined) {
-        query.isVerified = filters.verified;
-      }
-
-      if (filters.services && filters.services.length > 0) {
-        query.services = { $in: filters.services };
-      }
-
-      if (filters.insurance && filters.insurance.length > 0) {
-        query.acceptedInsurance = { $in: filters.insurance };
-      }
-
-      if (filters.search) {
-        query.$text = { $search: filters.search };
-      }
-
-      const clinics = await Clinic.find(query)
-        .sort({ rating: -1, reviewCount: -1 })
-        .lean();
-
-      // Add distance calculation to each clinic
-      const clinicsWithDistance = clinics.map(clinic => {
-        const distance = this.calculateDistance(
-          latitude, longitude,
-          clinic.location?.coordinates[1] || 0,
-          clinic.location?.coordinates[0] || 0
-        );
-        
-        return {
-          ...clinic,
-          distance: Math.round(distance), // Distance in meters
-          distanceText: this.formatDistance(distance)
-        };
-      });
-
-      logger.info(`Found ${clinicsWithDistance.length} clinics within ${radiusInMeters}m of [${latitude}, ${longitude}]`);
-      
-      return clinicsWithDistance;
-    } catch (error: any) {
-      logger.error('Error finding nearby clinics:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Find clinics within a bounding box (for map view)
-   */
-  static async findClinicsInBounds(bounds: LocationBounds, filters: ClinicFilters = {}) {
-    try {
-      const query: any = {
-        location: {
-          $geoWithin: {
-            $box: [
-              [bounds.swLng, bounds.swLat], // Southwest corner
-              [bounds.neLng, bounds.neLat]  // Northeast corner
-            ]
-          }
-        }
-      };
-
-      // Add filters
-      if (filters.verified !== undefined) {
-        query.isVerified = filters.verified;
-      }
-
-      if (filters.services && filters.services.length > 0) {
-        query.services = { $in: filters.services };
-      }
-
-      if (filters.insurance && filters.insurance.length > 0) {
-        query.acceptedInsurance = { $in: filters.insurance };
-      }
-
-      const clinics = await Clinic.find(query)
-        .sort({ rating: -1 })
-        .lean();
-
-      logger.info(`Found ${clinics.length} clinics in bounds`);
-      return clinics;
-    } catch (error: any) {
-      logger.error('Error finding clinics in bounds:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Search clinics with advanced filtering
-   */
-  static async searchClinics(page: number = 1, limit: number = 10, filters: ClinicFilters = {}) {
+  static async getClinics(page: number = 1, limit: number = 10, filters: ClinicFilters = {}) {
     try {
       const skip = (page - 1) * limit;
       const query: any = {};
 
-      // Location-based search
-      if (filters.latitude && filters.longitude) {
-        const radiusInMeters = filters.radius || 50000; // Default 50km
-        query.location = {
-          $near: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [filters.longitude, filters.latitude]
-            },
-            $maxDistance: radiusInMeters
-          }
-        };
-      }
-
-      // City/State search
-      if (filters.city) {
-        query['locationDetails.addressComponents.locality'] = new RegExp(filters.city, 'i');
-      }
-      
-      if (filters.state) {
-        query['locationDetails.addressComponents.administrativeAreaLevel1'] = new RegExp(filters.state, 'i');
-      }
-
-      if (filters.country) {
-        query['locationDetails.addressComponents.country'] = new RegExp(filters.country, 'i');
-      }
-
-      // Text search
+      // Build query based on filters
       if (filters.search) {
         query.$text = { $search: filters.search };
       }
 
-      // Service filters
-      if (filters.services && filters.services.length > 0) {
-        query.services = { $in: filters.services };
-      }
-
-      // Insurance filters
-      if (filters.insurance && filters.insurance.length > 0) {
-        query.acceptedInsurance = { $in: filters.insurance };
-      }
-
-      // Verification filter
       if (filters.verified !== undefined) {
         query.isVerified = filters.verified;
       }
 
-      // Execute query
+      if (filters.services && filters.services.length > 0) {
+        query.services = { $in: filters.services };
+      }
+
       const [clinics, total] = await Promise.all([
         Clinic.find(query)
           .skip(skip)
           .limit(limit)
-          .sort({ 
-            ...(filters.latitude && filters.longitude ? {} : { rating: -1, reviewCount: -1 })
-          })
+          .sort({ rating: -1, reviewCount: -1 })
           .lean(),
         Clinic.countDocuments(query)
       ]);
 
-      // Add distance if location provided
-      let clinicsWithDistance = clinics;
-      if (filters.latitude && filters.longitude) {
-        clinicsWithDistance = clinics.map(clinic => {
-          const distance = this.calculateDistance(
-            filters.latitude!, filters.longitude!,
-            clinic.location?.coordinates[1] || 0,
-            clinic.location?.coordinates[0] || 0
-          );
-          
-          return {
-            ...clinic,
-            distance: Math.round(distance),
-            distanceText: this.formatDistance(distance)
-          };
-        });
-      }
-
       return {
-        clinics: clinicsWithDistance,
+        clinics,
         pagination: {
           page,
           limit,
@@ -282,26 +288,10 @@ export class ClinicService {
   }
 
   /**
-   * Get all clinics with pagination (existing method enhanced)
-   */
-  static async getClinics(page: number = 1, limit: number = 10, filters: ClinicFilters = {}) {
-    return this.searchClinics(page, limit, filters);
-  }
-
-  /**
-   * Update clinic
+   * Update clinic (existing method)
    */
   static async updateClinic(id: string, updateData: Partial<IClinic>): Promise<IClinic | null> {
     try {
-      // If location details are being updated, ensure GeoJSON is updated too
-      if (updateData.locationDetails) {
-        const { latitude, longitude } = updateData.locationDetails;
-        updateData.location = {
-          type: 'Point',
-          coordinates: [longitude, latitude]
-        };
-      }
-
       const clinic = await Clinic.findByIdAndUpdate(
         id,
         updateData,
@@ -320,7 +310,7 @@ export class ClinicService {
   }
 
   /**
-   * Delete clinic
+   * Delete clinic (existing method)
    */
   static async deleteClinic(id: string): Promise<boolean> {
     try {
@@ -334,147 +324,6 @@ export class ClinicService {
       return false;
     } catch (error: any) {
       logger.error(`Error deleting clinic ${id}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get clinics by city for quick filters
-   */
-  static async getClinicsByCity(city: string, state?: string) {
-    try {
-      const query: any = {
-        'locationDetails.addressComponents.locality': new RegExp(city, 'i'),
-        isVerified: true
-      };
-
-      if (state) {
-        query['locationDetails.addressComponents.administrativeAreaLevel1'] = new RegExp(state, 'i');
-      }
-
-      const clinics = await Clinic.find(query)
-        .sort({ rating: -1 })
-        .lean();
-
-      return clinics;
-    } catch (error: any) {
-      logger.error(`Error finding clinics in ${city}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get popular cities with clinic counts
-   */
-  static async getPopularCities(limit: number = 20) {
-    try {
-      const pipeline = [
-        { $match: { isVerified: true } },
-        {
-          $group: {
-            _id: {
-              city: '$locationDetails.addressComponents.locality',
-              state: '$locationDetails.addressComponents.administrativeAreaLevel1'
-            },
-            count: { $sum: 1 },
-            avgRating: { $avg: '$rating' }
-          }
-        },
-        { $match: { '_id.city': { $ne: null } } },
-        { $sort: { count: -1 as 1 | -1 } }, // Explicitly cast -1 to the expected type
-        { $limit: limit }
-      ];
-
-      const cities = await Clinic.aggregate(pipeline);
-      return cities.map(city => ({
-        city: city._id.city,
-        state: city._id.state,
-        clinicCount: city.count,
-        averageRating: Math.round(city.avgRating * 10) / 10
-      }));
-    } catch (error: any) {
-      logger.error('Error getting popular cities:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Calculate distance between two points using Haversine formula
-   */
-  private static calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371000; // Earth's radius in meters
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  /**
-   * Format distance for display
-   */
-  private static formatDistance(meters: number): string {
-    if (meters < 1000) {
-      return `${Math.round(meters)}m`;
-    } else if (meters < 10000) {
-      return `${(meters / 1000).toFixed(1)}km`;
-    } else {
-      return `${Math.round(meters / 1000)}km`;
-    }
-  }
-
-  /**
-   * Get clinic statistics for admin dashboard
-   */
-  static async getClinicStats() {
-    try {
-      const [
-        totalClinics,
-        verifiedClinics,
-        clinicsByState,
-        recentClinics,
-        topRatedClinics
-      ] = await Promise.all([
-        Clinic.countDocuments({}),
-        Clinic.countDocuments({ isVerified: true }),
-        Clinic.aggregate([
-          { $match: { isVerified: true } },
-          {
-            $group: {
-              _id: '$locationDetails.addressComponents.administrativeAreaLevel1',
-              count: { $sum: 1 }
-            }
-          },
-          { $sort: { count: -1 } },
-          { $limit: 10 }
-        ]),
-        Clinic.countDocuments({ 
-          createdAt: { 
-            $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
-          } 
-        }),
-        Clinic.find({ isVerified: true, rating: { $gte: 4.5 } })
-          .sort({ rating: -1, reviewCount: -1 })
-          .limit(5)
-          .lean()
-      ]);
-
-      return {
-        totalClinics,
-        verifiedClinics,
-        verificationRate: Math.round((verifiedClinics / totalClinics) * 100),
-        clinicsByState: clinicsByState.map(item => ({
-          state: item._id || 'Unknown',
-          count: item.count
-        })),
-        recentClinics,
-        topRatedClinics
-      };
-    } catch (error: any) {
-      logger.error('Error getting clinic statistics:', error);
       throw error;
     }
   }

@@ -3,7 +3,7 @@ import { serverConfig } from './config';
 import v1Router from './routers/v1/index.router';
 
 import { appErrorHandler, genericErrorHandler } from './middlewares/error.middleware';
-import logger from './config/logger.config';
+
 import { attachCorrelationIdMiddleware } from './middlewares/correlation.middleware';
 // import { posthog } from './posthog';
 import { initDB } from './config/db';
@@ -67,7 +67,7 @@ app.use(genericErrorHandler);
 
 
 app.listen(serverConfig.PORT, () => {
-    logger.info(`Server is running on http://localhost:${serverConfig.PORT}`);
+   console.log(`Server is running on http://localhost:${serverConfig.PORT}`);
     initDB();
-    logger.info(`Press Ctrl+C to stop the server.`);
+
 });

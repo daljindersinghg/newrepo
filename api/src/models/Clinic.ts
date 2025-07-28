@@ -6,6 +6,7 @@ interface LocationDetails {
   longitude: number;
   placeId: string;
   formattedAddress: string;
+  email?:string
   addressComponents: {
     streetNumber?: string;
     route?: string;

@@ -133,7 +133,7 @@ export function GooglePlacesAutocomplete({
       
       autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
-        componentRestrictions: { country: 'us' },
+        componentRestrictions: { country: 'ca' },
         fields: ['place_id', 'formatted_address', 'geometry', 'name', 'types']
       });
 
