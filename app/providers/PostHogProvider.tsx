@@ -47,3 +47,11 @@ export function useSimpleTracking() {
 
   return { track };
 }
+
+// Hook to access the PostHog instance
+export function usePostHog() {
+  return {
+    track: posthog.capture.bind(posthog),
+    isLoaded: posthog.__loaded,
+  };
+}
