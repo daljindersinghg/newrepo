@@ -79,7 +79,6 @@ export class ClinicService {
    */
   static async createClinic(clinicData: Partial<IClinic>): Promise<IClinic> {
     try {
-      // Check if clinic already exists by email
       const existingClinic = await Clinic.findOne({ 
         email: clinicData.email 
       });
@@ -92,22 +91,24 @@ export class ClinicService {
       if (clinicData.locationDetails?.placeId) {
         const googleData = await this.googlePlacesService.getClinicData(clinicData.locationDetails.placeId);
         if (googleData) {
-          // Merge manual data with Google data, giving priority to manual data
           const mergedData = {
             ...googleData,
             ...clinicData,
-            // Keep manual data priority for these fields
             name: clinicData.name || googleData.name,
-            email: clinicData.email!, // Email is required
+            email: clinicData.email!,
             services: clinicData.services || googleData.services,
             acceptedInsurance: clinicData.acceptedInsurance || googleData.acceptedInsurance,
             hours: { ...googleData.hours, ...clinicData.hours },
-            // Add sync tracking if Google Place ID exists
             lastGoogleSync: new Date(),
             syncEnabled: true
           };
           clinicData = mergedData;
         }
+      } else if (clinicData.location?.coordinates) {
+        // ADD THIS: Generate static map thumbnail for manual clinic creation (no Google Place data)
+        // const googlePlacesService = new GooglePlacesService();
+        const [lng, lat] = clinicData.location.coordinates;
+        clinicData.thumbnail = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=300x200&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${process.env.GOOGLE_PLACES_API_KEY}`;
       }
 
       const clinic = new Clinic(clinicData);
@@ -118,6 +119,9 @@ export class ClinicService {
       throw error;
     }
   }
+
+
+
 
   /**
    * Sync clinic data with Google Places

@@ -246,7 +246,7 @@ export function ClinicResults() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <div className="animate-spin h-12 w-12 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Finding Dentists Near You</h2>
           <p className="text-gray-600">Please wait while we search for the best dentists in your area...</p>
         </div>
@@ -349,7 +349,7 @@ export function ClinicResults() {
               {/* Filters and Sort */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 {/* Specialty Filter */}
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Service:
                   </label>
@@ -365,7 +365,7 @@ export function ClinicResults() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div> */}
 
                 {/* Sort Options */}
                 <div>
@@ -415,7 +415,7 @@ export function ClinicResults() {
                     key={clinic._id}
                     id={`clinic-${clinic._id}`}
                     className={`transition-all duration-200 ${
-                      selectedClinicId === clinic._id ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
+                      selectedClinicId === clinic._id ? 'ring-1 ring-blue-200 ring-opacity-50' : ''
                     }`}
                     onMouseEnter={() => handleClinicHover(clinic._id)}
                     onMouseLeave={() => handleClinicHover(null)}

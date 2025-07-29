@@ -7,6 +7,7 @@ interface LocationDetails {
   placeId: string;
   formattedAddress: string;
   email?:string
+  thumbnail?: string;
   addressComponents: {
     streetNumber?: string;
     route?: string;
@@ -36,6 +37,7 @@ export interface IClinic extends Document {
   website?: string;
   services: string[];
   acceptedInsurance?: string[];
+  thumbnail?: string;
   hours?: {
     monday?: string;
     tuesday?: string;
@@ -93,6 +95,7 @@ const ClinicSchema: Schema = new Schema({
     lowercase: true,
     trim: true
   },
+  thumbnail: { type: String },
   website: { 
     type: String,
     trim: true

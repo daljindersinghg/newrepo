@@ -33,31 +33,31 @@ interface PlaceDetails {
   types: string[];
 }
 
-interface LocationDetails {
-  latitude: number;
-  longitude: number;
-  placeId: string;
-  formattedAddress: string;
-  addressComponents: {
-    streetNumber?: string;
-    route?: string;
-    locality?: string;
-    administrativeAreaLevel1?: string;
-    administrativeAreaLevel2?: string;
-    country?: string;
-    postalCode?: string;
-  };
-  viewport?: {
-    northeast: { lat: number; lng: number };
-    southwest: { lat: number; lng: number };
-  };
-  businessInfo?: {
-    businessStatus?: string;
-    placeTypes?: string[];
-    website?: string;
-    phoneNumber?: string;
-  };
-}
+// interface LocationDetails {
+//   latitude: number;
+//   longitude: number;
+//   placeId: string;
+//   formattedAddress: string;
+//   addressComponents: {
+//     streetNumber?: string;
+//     route?: string;
+//     locality?: string;
+//     administrativeAreaLevel1?: string;
+//     administrativeAreaLevel2?: string;
+//     country?: string;
+//     postalCode?: string;
+//   };
+//   viewport?: {
+//     northeast: { lat: number; lng: number };
+//     southwest: { lat: number; lng: number };
+//   };
+//   businessInfo?: {
+//     businessStatus?: string;
+//     placeTypes?: string[];
+//     website?: string;
+//     phoneNumber?: string;
+//   };
+// }
 
 export class GooglePlacesService {
   private apiKey: string;
@@ -68,6 +68,15 @@ export class GooglePlacesService {
     if (!this.apiKey) {
       throw new Error('GOOGLE_PLACES_API_KEY environment variable is required');
     }
+  }
+  generateThumbnail(placeDetails: PlaceDetails): string {
+    // First priority: Get the first photo from Google Places (business photo)
+    if (placeDetails.photos && placeDetails.photos.length > 0) {
+      return this.getPhotoUrl(placeDetails.photos[0].photo_reference, 300);
+    }
+    
+    // Fallback: Generate static map if no photos available
+    return `https://maps.googleapis.com/maps/api/staticmap?center=${placeDetails.geometry.location.lat},${placeDetails.geometry.location.lng}&zoom=15&size=300x200&maptype=roadmap&markers=color:red%7C${placeDetails.geometry.location.lat},${placeDetails.geometry.location.lng}&key=${this.apiKey}`;
   }
 
   /**
@@ -222,25 +231,21 @@ export class GooglePlacesService {
   /**
    * Get clinic-specific information and auto-populate data
    */
-  async getClinicData(placeId: string) {
+async getClinicData(placeId: string) {
     const placeDetails = await this.getPlaceDetails(placeId);
     if (!placeDetails) return null;
 
-    // Auto-populate clinic data matching your existing IClinic interface
     const clinicData = {
-      // Basic info from Google
       name: placeDetails.name,
       address: placeDetails.formatted_address,
       phone: placeDetails.formatted_phone_number || '',
       website: placeDetails.website || '',
       
-      // Location data - Fixed to use proper tuple type
       location: {
         type: 'Point' as const,
         coordinates: [placeDetails.geometry.location.lng, placeDetails.geometry.location.lat] as [number, number]
       },
       
-      // Detailed location data
       locationDetails: {
         latitude: placeDetails.geometry.location.lat,
         longitude: placeDetails.geometry.location.lng,
@@ -253,37 +258,29 @@ export class GooglePlacesService {
           website: placeDetails.website,
           phoneNumber: placeDetails.formatted_phone_number
         }
-      } as LocationDetails,
+      },
       
-      // Operating hours
       hours: this.parseOpeningHours(placeDetails.opening_hours),
       
-      // Photos - Fixed structure
+      // ADD THIS LINE:
+      thumbnail: this.generateThumbnail(placeDetails),
+      
       photos: placeDetails.photos?.map(photo => ({
-        reference: photo.photo_reference,
         url: this.getPhotoUrl(photo.photo_reference),
+        reference: photo.photo_reference,
         width: photo.width,
         height: photo.height
       })) || [],
       
-      // Rating and reviews
       rating: placeDetails.rating || 0,
       reviewCount: placeDetails.user_ratings_total || 0,
-      
-      // Auto-verification if it's a dental practice
       isVerified: this.isDentalPractice(placeDetails.types, placeDetails.name),
-      
-      // Default services based on place type
       services: this.inferServices(placeDetails.types, placeDetails.name),
-      
-      // Searchable address components
       searchableAddress: [
         placeDetails.address_components.find(c => c.types.includes('locality'))?.long_name,
         placeDetails.address_components.find(c => c.types.includes('administrative_area_level_1'))?.long_name,
         placeDetails.address_components.find(c => c.types.includes('postal_code'))?.long_name
       ].filter(Boolean) as string[],
-
-      // Default values for required fields
       acceptedInsurance: [] as string[]
     };
 
