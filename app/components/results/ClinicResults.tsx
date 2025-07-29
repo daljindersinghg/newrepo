@@ -6,6 +6,7 @@ import { useSimpleTracking } from '../AnalyticsProvider';
 import { Button } from '@/components/ui/button';
 import { EmailCapture } from './EmailCapture';
 import { ClinicCard } from './ClinicCard';
+import { MapView } from './MapView';
 
 interface Clinic {
   _id: string;
@@ -84,6 +85,8 @@ export function ClinicResults() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'availability'>('distance');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('');
+  const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(true);
   const { track } = useSimpleTracking();
 
   useEffect(() => {
@@ -159,8 +162,7 @@ export function ClinicResults() {
   const sortClinics = (clinicList: Clinic[], sortBy: string) => {
     switch (sortBy) {
       case 'rating':
-        // For now, random sort since we don't have ratings yet
-        return [...clinicList].sort(() => Math.random() - 0.5);
+        return [...clinicList].sort((a, b) => (b.rating || 0) - (a.rating || 0));
       case 'availability':
         // For now, random sort since we don't have availability data yet
         return [...clinicList].sort(() => Math.random() - 0.5);
@@ -215,6 +217,26 @@ export function ClinicResults() {
     });
   };
 
+  const handleClinicSelect = (clinicId: string) => {
+    setSelectedClinicId(clinicId);
+    
+    // Scroll to clinic card in list
+    const clinicElement = document.getElementById(`clinic-${clinicId}`);
+    if (clinicElement) {
+      clinicElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    track('clinic_selected_from_map', {
+      clinic_id: clinicId,
+      location: location?.address
+    });
+  };
+
+  const handleClinicHover = (clinicId: string | null) => {
+    // Could add hover effects here
+    setSelectedClinicId(clinicId);
+  };
+
   // Get unique services for filter dropdown
   const availableServices = [...new Set(
     clinics.flatMap(clinic => clinic.services)
@@ -263,16 +285,30 @@ export function ClinicResults() {
                 </p>
               )}
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleReturnToSearch}
-              className="flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              New Search
-            </Button>
+            <div className="flex items-center gap-3">
+              {/* Toggle Map View */}
+              <Button 
+                variant="outline" 
+                onClick={() => setShowMap(!showMap)}
+                className="flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 13l-6-3" />
+                </svg>
+                {showMap ? 'Hide Map' : 'Show Map'}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleReturnToSearch}
+                className="flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                New Search
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -286,8 +322,8 @@ export function ClinicResults() {
         />
       )}
 
-      {/* Results */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {clinics.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🦷</div>
@@ -369,16 +405,42 @@ export function ClinicResults() {
               </div>
             )}
 
-            {/* Clinic Cards */}
-            <div className={`grid gap-6 ${showEmailCapture ? 'filter blur-sm pointer-events-none' : ''}`}>
-              {clinics.map((clinic, index) => (
-                <ClinicCard
-                  key={clinic._id} 
-                  clinic={clinic} 
-                  index={index}
-                  userEmail={userEmail}
-                />
-              ))}
+            {/* Two Column Layout */}
+            <div className={`grid gap-6 ${showMap ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} ${showEmailCapture ? 'filter blur-sm pointer-events-none' : ''}`}>
+              
+              {/* Left Column - Clinic List */}
+              <div className="space-y-6 max-h-screen overflow-y-auto">
+                {clinics.map((clinic, index) => (
+                  <div 
+                    key={clinic._id}
+                    id={`clinic-${clinic._id}`}
+                    className={`transition-all duration-200 ${
+                      selectedClinicId === clinic._id ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
+                    }`}
+                    onMouseEnter={() => handleClinicHover(clinic._id)}
+                    onMouseLeave={() => handleClinicHover(null)}
+                  >
+                    <ClinicCard
+                      clinic={clinic} 
+                      index={index}
+                      userEmail={userEmail}
+                      isHighlighted={selectedClinicId === clinic._id}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Column - Map */}
+              {showMap && (
+                <div className="sticky top-6 h-[calc(100vh-8rem)]">
+                  <MapView
+                    clinics={clinics}
+                    selectedClinicId={selectedClinicId}
+                    onClinicSelect={handleClinicSelect}
+                    userLocation={location ? { lat: location.lat, lng: location.lng } : undefined}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Bottom CTA */}

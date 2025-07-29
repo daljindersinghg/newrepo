@@ -23,6 +23,10 @@ interface Clinic {
     saturday?: string;
     sunday?: string;
   };
+  location?: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  };
   isVerified?: boolean;
   rating?: number;
   reviewCount?: number;
@@ -35,9 +39,10 @@ interface ClinicCardProps {
   clinic: Clinic;
   index: number;
   userEmail: string | null;
+  isHighlighted?: boolean;
 }
 
-export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
+export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: ClinicCardProps) {
   const [showDetails, setShowDetails] = useState(false);
   const { track } = useSimpleTracking();
 
@@ -73,6 +78,22 @@ export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
     }
   };
 
+  const handleGetDirections = () => {
+    if (clinic.location) {
+      const lat = clinic.location.coordinates[1];
+      const lng = clinic.location.coordinates[0];
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      
+      track('directions_clicked', {
+        clinic_id: clinic._id,
+        clinic_name: clinic.name,
+        coordinates: clinic.location.coordinates
+      });
+      
+      window.open(googleMapsUrl, '_blank');
+    }
+  };
+
   // Generate mock rating if not available
   const displayRating = clinic.rating || (4.0 + (Math.random() * 1.0));
   const displayReviewCount = clinic.reviewCount || (10 + Math.floor(Math.random() * 40));
@@ -85,14 +106,18 @@ export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+    <div className={`bg-white rounded-xl shadow-sm border-2 p-6 hover:shadow-md transition-all duration-200 ${
+      isHighlighted ? 'border-blue-500 shadow-blue-100' : 'border-gray-200'
+    }`}>
       <div className="flex flex-col lg:flex-row lg:items-start gap-6">
         {/* Clinic Info */}
         <div className="flex-1">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center">
               {/* Clinic Logo/Icon */}
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+              <div className={`w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mr-4 ${
+                isHighlighted ? 'ring-2 ring-blue-400' : ''
+              }`}>
                 <span className="text-blue-600 font-semibold text-xl">
                   {clinic.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </span>
@@ -101,6 +126,11 @@ export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-1">
                   {clinic.name}
+                  {isHighlighted && (
+                    <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      📍 Selected on map
+                    </span>
+                  )}
                 </h3>
                 
                 {/* Rating */}
@@ -130,7 +160,9 @@ export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
                   </p>
                   <p className="text-sm text-gray-600 flex items-center">
                     <span className="mr-1">📞</span>
-                    {clinic.phone}
+                    <a href={`tel:${clinic.phone}`} className="hover:text-blue-600 transition-colors">
+                      {clinic.phone}
+                    </a>
                   </p>
                   <p className="text-sm text-gray-600 flex items-center">
                     <span className="mr-1">🕒</span>
@@ -199,6 +231,13 @@ export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
               </div>
             </div>
           )}
+
+          {/* Distance info (if available) */}
+          {clinic.location && (
+            <div className="text-xs text-gray-500 mb-4">
+              📍 Location: {clinic.location.coordinates[1].toFixed(4)}, {clinic.location.coordinates[0].toFixed(4)}
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -218,15 +257,29 @@ export function ClinicCard({ clinic, index, userEmail }: ClinicCardProps) {
             {showDetails ? 'Hide Details' : 'View Details'}
           </Button>
 
-          {clinic.website && (
-            <Button
-              variant="outline"
-              onClick={handleClinicWebsite}
-              className="text-blue-600"
-            >
-              🌐 Visit Website
-            </Button>
-          )}
+          <div className="grid grid-cols-2 gap-2">
+            {clinic.website && (
+              <Button
+                variant="outline"
+                onClick={handleClinicWebsite}
+                className="text-blue-600 text-sm"
+                size="sm"
+              >
+                🌐 Website
+              </Button>
+            )}
+
+            {clinic.location && (
+              <Button
+                variant="outline"
+                onClick={handleGetDirections}
+                className="text-green-600 text-sm"
+                size="sm"
+              >
+                🗺️ Directions
+              </Button>
+            )}
+          </div>
 
           {/* Quick Info */}
           <div className="text-center pt-2 border-t border-gray-200">
