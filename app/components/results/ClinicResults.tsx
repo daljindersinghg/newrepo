@@ -270,9 +270,9 @@ export function ClinicResults() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${showEmailCapture ? 'overflow-hidden' : ''}`}>
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className={`bg-white shadow-sm border-b ${showEmailCapture ? 'filter blur-sm' : ''}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -323,7 +323,7 @@ export function ClinicResults() {
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ${showEmailCapture ? 'filter blur-sm' : ''}`}>
         {clinics.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🦷</div>
@@ -406,10 +406,10 @@ export function ClinicResults() {
             )}
 
             {/* Two Column Layout */}
-            <div className={`grid gap-6 ${showMap ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} ${showEmailCapture ? 'filter blur-sm pointer-events-none' : ''}`}>
+            <div className={`grid gap-6 ${showMap ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
               
               {/* Left Column - Clinic List */}
-              <div className="space-y-6 max-h-screen overflow-y-auto">
+              <div className="space-y-6 max-h-[85vh] min-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {clinics.map((clinic, index) => (
                   <div 
                     key={clinic._id}
@@ -432,7 +432,7 @@ export function ClinicResults() {
 
               {/* Right Column - Map */}
               {showMap && (
-                <div className="sticky top-6 h-[calc(100vh-8rem)]">
+                <div className="sticky top-4 h-[85vh] min-h-[600px]">
                   <MapView
                     clinics={clinics}
                     selectedClinicId={selectedClinicId}

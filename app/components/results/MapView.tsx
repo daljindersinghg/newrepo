@@ -356,7 +356,7 @@ export function MapView({ clinics, selectedClinicId, onClinicSelect, userLocatio
   }
 
   return (
-    <div className="h-full relative">
+    <div className="h-full relative min-h-[500px] max-h-[45vh]">
       <div ref={mapRef} className="w-full h-full rounded-lg" />
       
       {!isMapLoaded && (
@@ -369,7 +369,7 @@ export function MapView({ clinics, selectedClinicId, onClinicSelect, userLocatio
       )}
 
       {/* Map Legend & Info */}
-      {isMapLoaded && (
+      {/* {isMapLoaded && (
         <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 text-xs max-w-[200px]">
           <div className="space-y-2">
             <div className="font-medium text-gray-800 mb-2">
@@ -394,7 +394,7 @@ export function MapView({ clinics, selectedClinicId, onClinicSelect, userLocatio
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
