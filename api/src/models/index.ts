@@ -1,6 +1,7 @@
 // Export all models from a single file for easier imports
 export { default as Patient, IPatient } from './Patient';
 export { default as Admin, IAdmin } from './Admin';
+export { default as User, IUser } from './User';
 export { default as Clinic, IClinic } from './Clinic';
 export { default as Appointment, IAppointment } from './Appointment';
 export { default as Treatment, ITreatment } from './Treatment';
