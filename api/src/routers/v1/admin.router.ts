@@ -24,6 +24,7 @@ adminRouter.post("/clinics/bulk-sync", ClinicController.bulkSyncClinics);
 // Clinic routes with parameters
 // adminRouter.get("/clinics/:id", ClinicController.getClinic);
 adminRouter.put("/clinics/:id", ClinicController.updateClinic);
+adminRouter.put("/clinics/:id/toggle-active", ClinicController.toggleClinicActiveStatus);
 adminRouter.delete("/clinics/:id", ClinicController.deleteClinic);
 adminRouter.post("/clinics/:id/sync-google", ClinicController.syncClinicWithGoogle);
 

@@ -13,6 +13,7 @@ interface ClinicFilters {
   longitude?: number;
   radius?: number;
   verified?: boolean;
+  active?: boolean;
 }
 
 interface CreateClinicFromGoogleData {
@@ -139,11 +140,11 @@ export class ClinicService {
       }
 
       // Update only specific fields that should be synced
+      // Note: Phone number is intentionally excluded to preserve manual updates
       const updateData = {
         // Update hours (most important for syncing)
         hours: googleData.hours,
-        // Update contact info if changed
-        phone: googleData.phone || clinic.phone,
+        // Update website if changed (but NOT phone number)
         website: googleData.website || clinic.website,
         // Update photos
         photos: googleData.photos,
@@ -254,6 +255,13 @@ export class ClinicService {
         query.isVerified = filters.verified;
       }
 
+      if (filters.active !== undefined) {
+        query.active = filters.active;
+      } else {
+        // Default to show only active clinics
+        query.active = true;
+      }
+
       if (filters.services && filters.services.length > 0) {
         query.services = { $in: filters.services };
       }
@@ -296,6 +304,25 @@ export class ClinicService {
       if (clinic) {
         return clinic;
       }
+
+      return clinic;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  /**
+   * Toggle clinic active status
+   */
+  static async toggleClinicActiveStatus(id: string): Promise<IClinic | null> {
+    try {
+      const clinic = await Clinic.findById(id);
+      if (!clinic) {
+        throw new Error('Clinic not found');
+      }
+
+      clinic.active = !clinic.active;
+      await clinic.save();
 
       return clinic;
     } catch (error: any) {

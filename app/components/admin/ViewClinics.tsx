@@ -14,6 +14,7 @@ interface Clinic {
   website?: string;
   services: string[];
   acceptedInsurance?: string[];
+  active?: boolean;
   hours?: {
     monday?: string;
     tuesday?: string;
@@ -81,8 +82,9 @@ export function ViewClinics() {
   const [total, setTotal] = useState(0);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showActiveOnly, setShowActiveOnly] = useState(true);
 
-  const fetchClinics = async (page = 1, search = '') => {
+  const fetchClinics = async (page = 1, search = '', activeFilter?: boolean) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -92,6 +94,10 @@ export function ViewClinics() {
       
       if (search) {
         params.append('search', search);
+      }
+
+      if (activeFilter !== undefined) {
+        params.append('active', activeFilter.toString());
       }
 
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/clinics?${params}`);
@@ -114,16 +120,22 @@ export function ViewClinics() {
   };
 
   useEffect(() => {
-    fetchClinics();
+    fetchClinics(1, '', showActiveOnly);
   }, []);
 
   const handleSearch = () => {
     setCurrentPage(1);
-    fetchClinics(1, searchTerm);
+    fetchClinics(1, searchTerm, showActiveOnly);
   };
 
   const handlePageChange = (page: number) => {
-    fetchClinics(page, searchTerm);
+    fetchClinics(page, searchTerm, showActiveOnly);
+  };
+
+  const handleActiveFilterChange = (activeOnly: boolean) => {
+    setShowActiveOnly(activeOnly);
+    setCurrentPage(1);
+    fetchClinics(1, searchTerm, activeOnly);
   };
 
   const handleEdit = (clinic: Clinic) => {
@@ -169,9 +181,39 @@ export function ViewClinics() {
       );
 
       if (response.status === 200 || response.status === 204) {
-        fetchClinics(currentPage, searchTerm);
+        fetchClinics(currentPage, searchTerm, showActiveOnly);
       } else {
         alert(response.data.message || 'Failed to delete clinic');
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Network error. Please try again.');
+    }
+  };
+
+  const handleToggleActive = async (clinicId: string, clinicName: string, currentStatus: boolean) => {
+    const action = currentStatus ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} ${clinicName}?`)) {
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/clinics/${clinicId}/toggle-active`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 200 && response.data.success) {
+        // Update the local state
+        setClinics(prev => prev.map(clinic => 
+          clinic._id === clinicId ? { ...clinic, active: !currentStatus } : clinic
+        ));
+      } else {
+        alert(response.data.message || `Failed to ${action} clinic`);
       }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Network error. Please try again.');
@@ -199,20 +241,44 @@ export function ViewClinics() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="Search clinics by name, email, or address..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <Button onClick={handleSearch} disabled={loading}>
-            Search
-          </Button>
+        <div className="flex flex-col gap-4">
+          {/* Active Status Filter */}
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">Show:</span>
+            <div className="flex gap-2">
+              <Button
+                variant={showActiveOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleActiveFilterChange(true)}
+              >
+                Active Only
+              </Button>
+              <Button
+                variant={!showActiveOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleActiveFilterChange(false)}
+              >
+                All Clinics
+              </Button>
+            </div>
+          </div>
+          
+          {/* Search */}
+          <div className="flex gap-4">
+            <input
+              type="text"
+              placeholder="Search clinics by name, email, or address..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <Button onClick={handleSearch} disabled={loading}>
+              Search
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -236,6 +302,13 @@ export function ViewClinics() {
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     <h3 className="text-xl font-semibold text-gray-900">{clinic.name}</h3>
+                    <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
+                      clinic.active !== false ? 
+                        'bg-green-100 text-green-800' : 
+                        'bg-gray-100 text-gray-800'
+                    }`}>
+                      {clinic.active !== false ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
                   
                   <div className="space-y-2 text-sm text-gray-600">
@@ -294,20 +367,33 @@ export function ViewClinics() {
                   </div>
                 </div>
 
-                <div className="ml-4 flex space-x-2">
+                <div className="ml-4 flex flex-col space-y-2">
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleEdit(clinic)}
+                      className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                    >
+                      Edit
+                    </Button>
+                    <button
+                      onClick={() => handleDelete(clinic._id, clinic.name)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 border border-red-300 rounded hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
                   <Button
                     variant="outline"
-                    onClick={() => handleEdit(clinic)}
-                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                    size="sm"
+                    onClick={() => handleToggleActive(clinic._id, clinic.name, clinic.active !== false)}
+                    className={clinic.active !== false ? 
+                      "text-orange-600 border-orange-300 hover:bg-orange-50" : 
+                      "text-green-600 border-green-300 hover:bg-green-50"
+                    }
                   >
-                    Edit
+                    {clinic.active !== false ? 'Deactivate' : 'Activate'}
                   </Button>
-                  <button
-                    onClick={() => handleDelete(clinic._id, clinic.name)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 border border-red-300 rounded hover:bg-red-50"
-                  >
-                    Delete
-                  </button>
                 </div>
               </div>
             </div>

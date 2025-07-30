@@ -222,8 +222,9 @@ export class ClinicController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
+      const active = req.query.active ? req.query.active === 'true' : undefined;
 
-      const filters = { search };
+      const filters = { search, active };
       const result = await ClinicService.getClinics(page, limit, filters);
 
       res.json({
@@ -288,6 +289,34 @@ export class ClinicController {
       });
     } catch (error) {
       logger.error('Error deleting clinic:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Toggle clinic active status
+   */
+  static async toggleClinicActiveStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const clinic = await ClinicService.toggleClinicActiveStatus(id);
+
+      if (!clinic) {
+        res.status(404).json({
+          success: false,
+          message: 'Clinic not found'
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        message: `Clinic ${clinic.active ? 'activated' : 'deactivated'} successfully`,
+        data: clinic
+      });
+    } catch (error) {
+      logger.error('Error toggling clinic active status:', error);
       next(error);
     }
   }

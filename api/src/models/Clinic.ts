@@ -48,6 +48,9 @@ export interface IClinic extends Document {
     sunday?: string;
   };
   
+  // Active status for clinic
+  active?: boolean;
+  
   // Enhanced location data for maps and search
   location?: {
     type: 'Point';
@@ -123,6 +126,13 @@ const ClinicSchema: Schema = new Schema({
     friday: { type: String, default: 'Closed' },
     saturday: { type: String, default: 'Closed' },
     sunday: { type: String, default: 'Closed' }
+  },
+
+  // Active status for clinic management
+  active: {
+    type: Boolean,
+    default: false,
+    index: true // For efficient filtering
   },
 
   // GeoJSON Point for MongoDB geospatial queries
@@ -213,6 +223,7 @@ ClinicSchema.index({ email: 1 }, { unique: true });
 
 // Performance indexes
 ClinicSchema.index({ isVerified: 1, rating: -1 }); // For verified clinics sorted by rating
+ClinicSchema.index({ active: 1, isVerified: 1 }); // For active and verified clinics
 ClinicSchema.index({ createdAt: -1 }); // For recent clinics
 
 // Pre-save middleware
@@ -250,6 +261,7 @@ ClinicSchema.statics.findNearby = function(longitude: number, latitude: number, 
         $maxDistance: maxDistance
       }
     },
+    active: true,
     isVerified: true
   });
 };
@@ -265,13 +277,14 @@ ClinicSchema.statics.findInBounds = function(
         $box: [[swLng, swLat], [neLng, neLat]]
       }
     },
+    active: true,
     isVerified: true
   });
 };
 
 // Find clinics by city/state
 ClinicSchema.statics.findByLocation = function(city?: string, state?: string, country?: string) {
-  const query: any = { isVerified: true };
+  const query: any = { active: true, isVerified: true };
   
   if (city) {
     query['locationDetails.addressComponents.locality'] = new RegExp(city, 'i');
