@@ -6,6 +6,7 @@ import {
   PatientSignupStep2Data, 
   PatientLoginData 
 } from '../services/patient.service';
+import logger from '../config/logger.config';
 
 export class PatientAuthController {
   /**
@@ -16,20 +17,16 @@ export class PatientAuthController {
     try {
       const { 
         email, 
-        firstName, 
-        lastName, 
+        name, 
         phone, 
-        dateOfBirth, 
-        address, 
-        emergencyContact, 
-        medicalHistory 
+        dateOfBirth
       }: PatientSignupStep1Data = req.body;
 
-      // Validate required fields (validation middleware should handle this, but double-check)
-      if (!email || !firstName || !lastName || !phone || !dateOfBirth || !address || !emergencyContact) {
+      // Validate required fields
+      if (!email || !name || !phone || !dateOfBirth) {
         res.status(400).json({
           success: false,
-          message: 'All required fields must be provided',
+          message: 'All required fields must be provided: email, name, phone, dateOfBirth',
           step: 1
         });
         return;
@@ -37,28 +34,15 @@ export class PatientAuthController {
 
       const result = await PatientService.signupStep1({
         email: email.toLowerCase().trim(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        name: name.trim(),
         phone: phone.trim(),
-        dateOfBirth: new Date(dateOfBirth),
-        address: {
-          street: address.street.trim(),
-          city: address.city.trim(),
-          state: address.state.trim(),
-          zipCode: address.zipCode.trim()
-        },
-        emergencyContact: {
-          name: emergencyContact.name.trim(),
-          phone: emergencyContact.phone.trim(),
-          relationship: emergencyContact.relationship.trim()
-        },
-        medicalHistory
+        dateOfBirth: new Date(dateOfBirth)
       });
 
       const statusCode = result.success ? 200 : 400;
       res.status(statusCode).json(result);
     } catch (error) {
-      console.error('Error in signupStep1:', error);
+      logger.error('Error in signupStep1:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error',
@@ -73,7 +57,7 @@ export class PatientAuthController {
    */
   static async signupStep2(req: Request, res: Response): Promise<void> {
     try {
-      const { email, otp, insurance }: PatientSignupStep2Data = req.body;
+      const { email, otp, insuranceProvider }: PatientSignupStep2Data = req.body;
 
       // Validate required fields
       if (!email || !otp) {
@@ -88,7 +72,7 @@ export class PatientAuthController {
       const result = await PatientService.signupStep2({
         email: email.toLowerCase().trim(),
         otp: otp.trim(),
-        insurance
+        insuranceProvider
       });
 
       const statusCode = result.success ? 200 : 400;
@@ -105,7 +89,7 @@ export class PatientAuthController {
 
       res.status(statusCode).json(result);
     } catch (error) {
-      console.error('Error in signupStep2:', error);
+      logger.error('Error in signupStep2:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error',
@@ -135,7 +119,7 @@ export class PatientAuthController {
       const statusCode = result.success ? 200 : 400;
       res.status(statusCode).json(result);
     } catch (error) {
-      console.error('Error in resendOTP:', error);
+      logger.error('Error in resendOTP:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -164,7 +148,7 @@ export class PatientAuthController {
       const statusCode = result.success ? 200 : 400;
       res.status(statusCode).json(result);
     } catch (error) {
-      console.error('Error in loginStep1:', error);
+      logger.error('Error in loginStep1:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -207,7 +191,7 @@ export class PatientAuthController {
 
       res.status(statusCode).json(result);
     } catch (error) {
-      console.error('Error in loginStep2:', error);
+      logger.error('Error in loginStep2:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -233,7 +217,7 @@ export class PatientAuthController {
         message: 'Logged out successfully'
       });
     } catch (error) {
-      console.error('Error in logout:', error);
+      logger.error('Error in logout:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -273,7 +257,7 @@ export class PatientAuthController {
         patient
       });
     } catch (error) {
-      console.error('Error in getProfile:', error);
+      logger.error('Error in getProfile:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'
@@ -323,7 +307,7 @@ export class PatientAuthController {
         patient: updatedPatient
       });
     } catch (error) {
-      console.error('Error in updateProfile:', error);
+      logger.error('Error in updateProfile:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'

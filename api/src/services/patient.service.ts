@@ -1,45 +1,25 @@
+// api/src/services/patient.service.ts
 import { Patient, IPatient } from '../models';
 import { OTPService } from './otp.service';
 import { AuthService } from './auth.service';
+import logger from '../config/logger.config';
 
 export interface PatientSignupStep1Data {
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   phone: string;
   dateOfBirth: Date;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  emergencyContact: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  medicalHistory?: {
-    allergies?: string[];
-    medications?: string[];
-    conditions?: string[];
-    lastDentalVisit?: Date;
-  };
 }
 
 export interface PatientSignupStep2Data {
   email: string;
   otp: string;
-  insurance?: {
-    provider: string;
-    memberId: string;
-    groupNumber?: string;
-  };
+  insuranceProvider?: string;
 }
 
 export interface PatientLoginData {
   email: string;
-  otp?: string;
+  otp: string;
 }
 
 export class PatientService {
@@ -53,7 +33,7 @@ export class PatientService {
     step: number;
   }> {
     try {
-      const { email, firstName, lastName, phone, dateOfBirth, address, emergencyContact, medicalHistory } = data;
+      const { email, name, phone, dateOfBirth } = data;
 
       // Validate email format
       if (!OTPService.isValidEmail(email)) {
@@ -82,31 +62,21 @@ export class PatientService {
       let patient: IPatient;
 
       if (existingPatient && !existingPatient.isEmailVerified) {
-        // Update existing unverified patient with all details
-        (existingPatient as any).firstName = firstName;
-        (existingPatient as any).lastName = lastName;
-        (existingPatient as any).phone = phone;
-        (existingPatient as any).dateOfBirth = dateOfBirth;
-        (existingPatient as any).address = address;
-        (existingPatient as any).emergencyContact = emergencyContact;
-        if (medicalHistory) {
-          (existingPatient as any).medicalHistory = medicalHistory;
-        }
-        (existingPatient as any).emailOTP = hashedOTP;
-        (existingPatient as any).otpExpires = otpExpires;
-        (existingPatient as any).signupStep = 1;
+        // Update existing unverified patient
+        existingPatient.name = name;
+        existingPatient.phone = phone;
+        existingPatient.dateOfBirth = dateOfBirth;
+        existingPatient.emailOTP = hashedOTP;
+        existingPatient.otpExpires = otpExpires;
+        existingPatient.signupStep = 1;
         patient = await existingPatient.save();
       } else {
-        // Create new patient with all details
+        // Create new patient
         patient = new Patient({
           email,
-          firstName,
-          lastName,
+          name,
           phone,
           dateOfBirth,
-          address,
-          emergencyContact,
-          medicalHistory,
           emailOTP: hashedOTP,
           otpExpires,
           signupStep: 1,
@@ -119,7 +89,7 @@ export class PatientService {
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: `${firstName} ${lastName}`,
+        patientName: name,
         type: 'signup'
       });
 
@@ -139,7 +109,7 @@ export class PatientService {
       };
 
     } catch (error) {
-      console.error('Error in signupStep1:', error);
+      logger.error('Error in signupStep1:', error);
       return {
         success: false,
         message: 'An error occurred during signup. Please try again.',
@@ -149,20 +119,20 @@ export class PatientService {
   }
 
   /**
-   * Step 2: Verify OTP and add optional insurance info
+   * Step 2: Verify OTP and complete signup
    */
   static async signupStep2(data: PatientSignupStep2Data): Promise<{
     success: boolean;
     message: string;
-    patient?: IPatient;
+    patient?: Omit<IPatient, 'emailOTP' | 'otpExpires'>;
     token?: string;
     step: number;
   }> {
     try {
-      const { email, otp, insurance } = data;
+      const { email, otp, insuranceProvider } = data;
 
       // Find patient
-      const patient = await Patient.findOne({ email });
+      const patient = await Patient.findOne({ email }).select('+emailOTP +otpExpires +otpAttempts');
       if (!patient) {
         return {
           success: false,
@@ -191,6 +161,7 @@ export class PatientService {
 
       // Verify OTP
       if (!patient.isOTPValid(otp)) {
+        await patient.save(); // Save the incremented attempt count
         return {
           success: false,
           message: 'Invalid or expired verification code. Please request a new one.',
@@ -198,15 +169,16 @@ export class PatientService {
         };
       }
 
-      // Update patient verification status and optional insurance
-      (patient as any).isEmailVerified = true;
-      (patient as any).signupStep = 2;
-      (patient as any).emailOTP = undefined;
-      (patient as any).otpExpires = undefined;
+      // Update patient verification status
+      patient.isEmailVerified = true;
+      patient.signupStep = 'completed';
+      patient.emailOTP = undefined;
+      patient.otpExpires = undefined;
+      patient.otpAttempts = undefined;
 
       // Add optional insurance data
-      if (insurance) {
-        (patient as any).insurance = insurance;
+      if (insuranceProvider) {
+        patient.insuranceProvider = insuranceProvider;
       }
 
       await patient.save();
@@ -218,6 +190,7 @@ export class PatientService {
       const responsePatient = patient.toObject();
       delete responsePatient.emailOTP;
       delete responsePatient.otpExpires;
+      delete responsePatient.otpAttempts;
 
       return {
         success: true,
@@ -228,7 +201,7 @@ export class PatientService {
       };
 
     } catch (error) {
-      console.error('Error in signupStep2:', error);
+      logger.error('Error in signupStep2:', error);
       return {
         success: false,
         message: 'An error occurred during verification. Please try again.',
@@ -259,20 +232,14 @@ export class PatientService {
       }
 
       // Generate new OTP
-      const otp = OTPService.generateOTP();
-      const hashedOTP = OTPService.hashOTP(otp);
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      // Update patient with new OTP
-      (patient as any).emailOTP = hashedOTP;
-      (patient as any).otpExpires = otpExpires;
+      const otp = patient.generateEmailOTP();
       await patient.save();
 
       // Send OTP email
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: `${(patient as any).firstName} ${(patient as any).lastName}`,
+        patientName: patient.name,
         type: 'verification'
       });
 
@@ -289,7 +256,7 @@ export class PatientService {
       };
 
     } catch (error) {
-      console.error('Error in resendVerificationOTP:', error);
+      logger.error('Error in resendVerificationOTP:', error);
       return {
         success: false,
         message: 'An error occurred. Please try again.'
@@ -316,7 +283,8 @@ export class PatientService {
       // Find verified patient
       const patient = await Patient.findOne({ 
         email, 
-        isEmailVerified: true 
+        isEmailVerified: true,
+        isActive: true
       });
 
       if (!patient) {
@@ -327,20 +295,14 @@ export class PatientService {
       }
 
       // Generate OTP
-      const otp = OTPService.generateOTP();
-      const hashedOTP = OTPService.hashOTP(otp);
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      // Update patient with login OTP
-      (patient as any).emailOTP = hashedOTP;
-      (patient as any).otpExpires = otpExpires;
+      const otp = patient.generateEmailOTP();
       await patient.save();
 
       // Send OTP email
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: `${(patient as any).firstName} ${(patient as any).lastName}`,
+        patientName: patient.name,
         type: 'login'
       });
 
@@ -357,7 +319,7 @@ export class PatientService {
       };
 
     } catch (error) {
-      console.error('Error in loginStep1:', error);
+      logger.error('Error in loginStep1:', error);
       return {
         success: false,
         message: 'An error occurred. Please try again.'
@@ -371,24 +333,18 @@ export class PatientService {
   static async loginStep2(data: PatientLoginData): Promise<{
     success: boolean;
     message: string;
-    patient?: IPatient;
+    patient?: Omit<IPatient, 'emailOTP' | 'otpExpires'>;
     token?: string;
   }> {
     try {
       const { email, otp } = data;
 
-      if (!otp) {
-        return {
-          success: false,
-          message: 'OTP is required'
-        };
-      }
-
       // Find verified patient
       const patient = await Patient.findOne({ 
         email, 
-        isEmailVerified: true 
-      });
+        isEmailVerified: true,
+        isActive: true
+      }).select('+emailOTP +otpExpires +otpAttempts');
 
       if (!patient) {
         return {
@@ -407,6 +363,7 @@ export class PatientService {
 
       // Verify OTP
       if (!patient.isOTPValid(otp)) {
+        await patient.save(); // Save the incremented attempt count
         return {
           success: false,
           message: 'Invalid or expired login code. Please request a new one.'
@@ -414,9 +371,9 @@ export class PatientService {
       }
 
       // Clear OTP after successful login
-      (patient as any).emailOTP = undefined;
-      (patient as any).otpExpires = undefined;
-      (patient as any).lastLogin = new Date();
+      patient.emailOTP = undefined;
+      patient.otpExpires = undefined;
+      patient.otpAttempts = undefined;
       await patient.save();
 
       // Generate JWT token
@@ -426,6 +383,7 @@ export class PatientService {
       const responsePatient = patient.toObject();
       delete responsePatient.emailOTP;
       delete responsePatient.otpExpires;
+      delete responsePatient.otpAttempts;
 
       return {
         success: true,
@@ -435,7 +393,7 @@ export class PatientService {
       };
 
     } catch (error) {
-      console.error('Error in loginStep2:', error);
+      logger.error('Error in loginStep2:', error);
       return {
         success: false,
         message: 'An error occurred during login. Please try again.'
@@ -447,105 +405,168 @@ export class PatientService {
    * Get patient by ID (for authenticated requests)
    */
   static async getPatientById(id: string): Promise<IPatient | null> {
-    const patient = await Patient.findById(id).select('-emailOTP -otpExpires');
-    return patient;
+    try {
+      const patient = await Patient.findById(id).select('-emailOTP -otpExpires -otpAttempts');
+      return patient;
+    } catch (error) {
+      logger.error('Error getting patient by ID:', error);
+      return null;
+    }
   }
 
   /**
    * Update patient profile (for authenticated patients)
    */
   static async updatePatient(id: string, updateData: Partial<IPatient>): Promise<IPatient | null> {
-    // Remove sensitive fields that shouldn't be updated
-    const sanitizedData = { ...updateData };
-    delete (sanitizedData as any).email;
-    delete (sanitizedData as any).emailOTP;
-    delete (sanitizedData as any).otpExpires;
-    delete (sanitizedData as any).isEmailVerified;
-    delete (sanitizedData as any).signupStep;
+    try {
+      // Remove sensitive fields that shouldn't be updated
+      const sanitizedData = { ...updateData };
+      delete (sanitizedData as any).email;
+      delete (sanitizedData as any).emailOTP;
+      delete (sanitizedData as any).otpExpires;
+      delete (sanitizedData as any).otpAttempts;
+      delete (sanitizedData as any).isEmailVerified;
+      delete (sanitizedData as any).signupStep;
 
-    const patient = await Patient.findByIdAndUpdate(
-      id,
-      sanitizedData,
-      { new: true, runValidators: true }
-    ).select('-emailOTP -otpExpires');
+      const patient = await Patient.findByIdAndUpdate(
+        id,
+        sanitizedData,
+        { new: true, runValidators: true }
+      ).select('-emailOTP -otpExpires -otpAttempts');
 
-    return patient;
+      return patient;
+    } catch (error) {
+      logger.error('Error updating patient:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new patient (admin function)
+   */
+  static async createPatient(patientData: Partial<IPatient>): Promise<IPatient> {
+    try {
+      // Check if patient already exists
+      const existingPatient = await Patient.findOne({ email: patientData.email });
+      if (existingPatient) {
+        throw new Error('Patient with this email already exists');
+      }
+
+      // Create new patient (admin created patients are automatically verified)
+      const patient = new Patient({
+        ...patientData,
+        isEmailVerified: true,
+        signupStep: 'completed'
+      });
+      await patient.save();
+
+      logger.info(`New patient created by admin: ${patient._id}`);
+      return patient;
+    } catch (error) {
+      logger.error('Error creating patient:', error);
+      throw error;
+    }
   }
 
   /**
    * Get all patients with pagination (admin function)
    */
   static async getPatients(page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
+    try {
+      const skip = (page - 1) * limit;
 
-    const [patients, total] = await Promise.all([
-      Patient.find()
-        .select('-emailOTP -otpExpires')
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 }),
-      Patient.countDocuments()
-    ]);
+      const [patients, total] = await Promise.all([
+        Patient.find()
+          .select('-emailOTP -otpExpires -otpAttempts')
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: -1 }),
+        Patient.countDocuments()
+      ]);
 
-    return {
-      patients,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
+      return {
+        patients,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      logger.error('Error getting patients:', error);
+      throw error;
+    }
   }
 
   /**
    * Delete patient (admin function)
    */
   static async deletePatient(id: string): Promise<boolean> {
-    const patient = await Patient.findByIdAndDelete(id);
-    return !!patient;
+    try {
+      const patient = await Patient.findByIdAndDelete(id);
+      
+      if (patient) {
+        logger.info(`Patient deleted: ${id}`);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      logger.error('Error deleting patient:', error);
+      throw error;
+    }
   }
 
   /**
    * Find patient by email (admin function)
    */
   static async getPatientByEmail(email: string): Promise<IPatient | null> {
-    const patient = await Patient.findOne({ email }).select('-emailOTP -otpExpires');
-    return patient;
+    try {
+      const patient = await Patient.findOne({ email }).select('-emailOTP -otpExpires -otpAttempts');
+      return patient;
+    } catch (error) {
+      logger.error('Error getting patient by email:', error);
+      return null;
+    }
   }
 
   /**
    * Search patients by name or email (admin function)
    */
   static async searchPatients(query: string, page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-    
-    const searchRegex = new RegExp(query, 'i');
-    const filter = {
-      $or: [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { email: searchRegex }
-      ]
-    };
+    try {
+      const skip = (page - 1) * limit;
+      
+      const searchRegex = new RegExp(query, 'i');
+      const filter = {
+        $or: [
+          { name: searchRegex },
+          { email: searchRegex }
+        ]
+      };
 
-    const [patients, total] = await Promise.all([
-      Patient.find(filter)
-        .select('-emailOTP -otpExpires')
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 }),
-      Patient.countDocuments(filter)
-    ]);
+      const [patients, total] = await Promise.all([
+        Patient.find(filter)
+          .select('-emailOTP -otpExpires -otpAttempts')
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: -1 }),
+        Patient.countDocuments(filter)
+      ]);
 
-    return {
-      patients,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
+      return {
+        patients,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      logger.error('Error searching patients:', error);
+      throw error;
+    }
   }
 }

@@ -1,5 +1,6 @@
-// api/src/models/Clinic.ts
+// api/src/models/Clinic.ts (Updated for Phase 1)
 import mongoose, { Document, Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 interface LocationDetails {
   latitude: number;
@@ -48,8 +49,21 @@ export interface IClinic extends Document {
     sunday?: string;
   };
   
+  // Authentication fields (NEW)
+  password: string;
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
+  lastLogin?: Date;
+  
   // Active status for clinic
   active?: boolean;
+  
+  // Admin approval fields (NEW)
+  isApproved: boolean;
+  approvedAt?: Date;
+  approvedBy?: mongoose.Types.ObjectId; // ref: Admin
   
   // Enhanced location data for maps and search
   location?: {
@@ -72,6 +86,9 @@ export interface IClinic extends Document {
   // Audit
   createdAt: Date;
   updatedAt: Date;
+  
+  // Methods
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const ClinicSchema: Schema = new Schema({
@@ -98,6 +115,34 @@ const ClinicSchema: Schema = new Schema({
     lowercase: true,
     trim: true
   },
+  
+  // Authentication fields (NEW)
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters'],
+    select: false // Don't include password in queries by default
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  passwordResetToken: {
+    type: String,
+    select: false
+  },
+  passwordResetExpires: {
+    type: Date,
+    select: false
+  },
+  lastLogin: {
+    type: Date
+  },
+  
   thumbnail: { type: String },
   website: { 
     type: String,
@@ -133,6 +178,20 @@ const ClinicSchema: Schema = new Schema({
     type: Boolean,
     default: false,
     index: true // For efficient filtering
+  },
+  
+  // Admin approval fields (NEW)
+  isApproved: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  approvedAt: {
+    type: Date
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin'
   },
 
   // GeoJSON Point for MongoDB geospatial queries
@@ -190,25 +249,10 @@ const ClinicSchema: Schema = new Schema({
 });
 
 // Indexes for efficient queries
-
-// Geospatial index for location-based searches (CRITICAL for map functionality)
-ClinicSchema.index({ location: '2dsphere' });
-
-// Compound indexes for common query patterns
-ClinicSchema.index({ 
-  'locationDetails.addressComponents.locality': 1, 
-  'locationDetails.addressComponents.administrativeAreaLevel1': 1 
-});
-
-ClinicSchema.index({ 
-  services: 1, 
-  'locationDetails.addressComponents.locality': 1 
-});
-
-ClinicSchema.index({ 
-  acceptedInsurance: 1, 
-  'locationDetails.addressComponents.locality': 1 
-});
+ClinicSchema.index({ location: '2dsphere' }); // Geospatial index
+ClinicSchema.index({ email: 1 }, { unique: true }); // Unique constraint on email
+ClinicSchema.index({ isApproved: 1, active: 1 }); // For approved and active clinics
+ClinicSchema.index({ isEmailVerified: 1 }); // For email verification status
 
 // Text index for full-text search
 ClinicSchema.index({
@@ -218,119 +262,26 @@ ClinicSchema.index({
   searchableAddress: 'text'
 });
 
-// Unique constraint on email
-ClinicSchema.index({ email: 1 }, { unique: true });
-
-// Performance indexes
-ClinicSchema.index({ isVerified: 1, rating: -1 }); // For verified clinics sorted by rating
-ClinicSchema.index({ active: 1, isVerified: 1 }); // For active and verified clinics
-ClinicSchema.index({ createdAt: -1 }); // For recent clinics
-
-// Pre-save middleware
-ClinicSchema.pre('save', function(next) {
+// Pre-save middleware to hash password
+ClinicSchema.pre('save', async function(next) {
   this.updatedAt = new Date();
   
-  // Auto-populate searchableAddress from locationDetails
-  //@ts-ignore
-  if (this.locationDetails?.addressComponents) {
-    //@ts-ignore
-    const components = this.locationDetails.addressComponents;
-    this.searchableAddress = [
-      components.locality,
-      components.administrativeAreaLevel1,
-      components.administrativeAreaLevel2,
-      components.postalCode,
-      components.country
-    ].filter(Boolean);
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) return next();
+
+  try {
+    // Hash password with cost of 12
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password as string, salt);
+    next();
+  } catch (error: any) {
+    next(error);
   }
-  
-  next();
 });
 
-// Static methods for geospatial queries
-
-// Find clinics within a certain distance (in meters)
-ClinicSchema.statics.findNearby = function(longitude: number, latitude: number, maxDistance: number = 10000) {
-  return this.find({
-    location: {
-      $near: {
-        $geometry: {
-          type: 'Point',
-          coordinates: [longitude, latitude]
-        },
-        $maxDistance: maxDistance
-      }
-    },
-    active: true,
-    isVerified: true
-  });
-};
-
-// Find clinics within a bounding box
-ClinicSchema.statics.findInBounds = function(
-  swLng: number, swLat: number, 
-  neLng: number, neLat: number
-) {
-  return this.find({
-    location: {
-      $geoWithin: {
-        $box: [[swLng, swLat], [neLng, neLat]]
-      }
-    },
-    active: true,
-    isVerified: true
-  });
-};
-
-// Find clinics by city/state
-ClinicSchema.statics.findByLocation = function(city?: string, state?: string, country?: string) {
-  const query: any = { active: true, isVerified: true };
-  
-  if (city) {
-    query['locationDetails.addressComponents.locality'] = new RegExp(city, 'i');
-  }
-  if (state) {
-    query['locationDetails.addressComponents.administrativeAreaLevel1'] = new RegExp(state, 'i');
-  }
-  if (country) {
-    query['locationDetails.addressComponents.country'] = new RegExp(country, 'i');
-  }
-  
-  return this.find(query);
-};
-
-// Instance methods
-
-// Calculate distance to a point (returns distance in meters)
-ClinicSchema.methods.distanceTo = function(longitude: number, latitude: number) {
-  if (!this.location?.coordinates) return null;
-  
-  const [clinicLng, clinicLat] = this.location.coordinates;
-  
-  // Haversine formula
-  const R = 6371000; // Earth's radius in meters
-  const dLat = (latitude - clinicLat) * Math.PI / 180;
-  const dLng = (longitude - clinicLng) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(clinicLat * Math.PI / 180) * Math.cos(latitude * Math.PI / 180) *
-          Math.sin(dLng/2) * Math.sin(dLng/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
-
-// Get formatted address components
-ClinicSchema.methods.getFormattedLocation = function() {
-  if (!this.locationDetails?.addressComponents) return this.address;
-  
-  const components = this.locationDetails.addressComponents;
-  return {
-    street: `${components.streetNumber || ''} ${components.route || ''}`.trim(),
-    city: components.locality,
-    state: components.administrativeAreaLevel1,
-    country: components.country,
-    zipCode: components.postalCode,
-    full: this.locationDetails.formattedAddress || this.address
-  };
+// Instance method to compare password
+ClinicSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password as string);
 };
 
 export default mongoose.model<IClinic>('Clinic', ClinicSchema);

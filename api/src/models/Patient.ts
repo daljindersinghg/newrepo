@@ -1,3 +1,4 @@
+// api/src/models/Patient.ts
 import mongoose, { Document, Schema } from 'mongoose';
 import crypto from 'crypto';
 
@@ -11,27 +12,15 @@ export interface IPatient extends Document {
   // Optional fields (Step 2)
   insuranceProvider?: string;
   
-  // Address (can be added later)
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-
   // OTP fields for email verification
   emailOTP?: string;
   otpExpires?: Date;
+  otpAttempts?: number;
   isEmailVerified: boolean;
 
   // Signup tracking
   signupStep: 1 | 2 | 'completed';
   signupCompletedAt?: Date;
-
-  // Referral system
-  referralCode?: string;
-  referredBy?: string;
 
   // Status
   isActive: boolean;
@@ -43,7 +32,6 @@ export interface IPatient extends Document {
   // Methods
   generateEmailOTP(): string;
   isOTPValid(otp: string): boolean;
-  generateReferralCode(): string;
 }
 
 const PatientSchema: Schema = new Schema({
@@ -85,33 +73,7 @@ const PatientSchema: Schema = new Schema({
   // Optional fields (Step 2)
   insuranceProvider: {
     type: String,
-    trim: true,
-    enum: {
-      values: [
-        'Blue Cross Blue Shield',
-        'Aetna',
-        'Cigna', 
-        'MetLife',
-        'Delta Dental',
-        'Humana',
-        'United Healthcare',
-        'Guardian',
-        'Aflac',
-        'Principal',
-        'No Insurance',
-        'Other'
-      ],
-      message: 'Please select a valid insurance provider'
-    }
-  },
-
-  // Address
-  address: {
-    street: { type: String, trim: true },
-    city: { type: String, trim: true },
-    state: { type: String, trim: true },
-    zipCode: { type: String, trim: true },
-    country: { type: String, trim: true, default: 'United States' }
+    trim: true
   },
 
   // OTP fields
@@ -121,6 +83,11 @@ const PatientSchema: Schema = new Schema({
   },
   otpExpires: {
     type: Date,
+    select: false
+  },
+  otpAttempts: {
+    type: Number,
+    default: 0,
     select: false
   },
   isEmailVerified: {
@@ -136,17 +103,6 @@ const PatientSchema: Schema = new Schema({
   },
   signupCompletedAt: {
     type: Date
-  },
-
-  // Referral system
-  referralCode: {
-    type: String,
-    unique: true,
-    sparse: true // Allow multiple null values
-  },
-  referredBy: {
-    type: String,
-    trim: true
   },
 
   // Status
@@ -169,8 +125,6 @@ const PatientSchema: Schema = new Schema({
 // Indexes
 PatientSchema.index({ email: 1 }, { unique: true });
 PatientSchema.index({ phone: 1 });
-PatientSchema.index({ referralCode: 1 }, { unique: true, sparse: true });
-PatientSchema.index({ referredBy: 1 });
 PatientSchema.index({ isActive: 1 });
 PatientSchema.index({ signupStep: 1 });
 PatientSchema.index({ createdAt: -1 });
@@ -178,11 +132,6 @@ PatientSchema.index({ createdAt: -1 });
 // Pre-save middleware to update timestamps
 PatientSchema.pre('save', function(next) {
   this.updatedAt = new Date();
-  
-  // Generate referral code if completing signup and none exists
-  if (this.signupStep === 'completed' && !this.referralCode) {
-    this.referralCode = (this as any).generateReferralCode();
-  }
   
   // Set completion date when completing signup
   if (this.signupStep === 'completed' && !this.signupCompletedAt) {
@@ -203,6 +152,9 @@ PatientSchema.methods.generateEmailOTP = function(): string {
   // Set expiration to 10 minutes from now
   this.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
   
+  // Reset attempts counter
+  this.otpAttempts = 0;
+  
   return otp; // Return plain OTP for sending via email
 };
 
@@ -217,22 +169,17 @@ PatientSchema.methods.isOTPValid = function(otp: string): boolean {
     return false;
   }
   
+  // Increment attempts
+  this.otpAttempts = (this.otpAttempts || 0) + 1;
+  
+  // Check if too many attempts
+  if (this.otpAttempts > 5) {
+    return false;
+  }
+  
   // Hash the provided OTP and compare
   const hashedOTP = crypto.createHash('sha256').update(otp).digest('hex');
   return hashedOTP === this.emailOTP;
-};
-
-// Instance method to generate unique referral code
-PatientSchema.methods.generateReferralCode = function(): string {
-  const name = this.name.replace(/\s+/g, '').toLowerCase();
-  const namePrefix = name.substring(0, 3);
-  const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `${namePrefix}${randomSuffix}`;
-};
-
-// Static method to find by referral code
-PatientSchema.statics.findByReferralCode = function(code: string) {
-  return this.findOne({ referralCode: code, isActive: true });
 };
 
 // Static method to find active patients
