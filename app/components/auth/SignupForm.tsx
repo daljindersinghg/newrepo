@@ -10,37 +10,30 @@ interface SignupFormProps {
 }
 
 interface SignupData {
-  firstName: string;
-  lastName: string;
   email: string;
-  password: string;
-  confirmPassword: string;
-  phone?: string;
-  dateOfBirth?: string;
-  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say';
-  agreeToTerms: boolean;
-  subscribeNewsletter: boolean;
+  otp: string;
+  name: string;
+  phone: string;
+  dateOfBirth: string;
+  insuranceProvider?: string;
 }
 
 export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const { signup } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<SignupData>({
-    firstName: '',
-    lastName: '',
     email: '',
-    password: '',
-    confirmPassword: '',
+    otp: '',
+    name: '',
     phone: '',
     dateOfBirth: '',
-    gender: undefined,
-    agreeToTerms: false,
-    subscribeNewsletter: true
+    insuranceProvider: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
 
-  const handleInputChange = (field: keyof SignupData, value: string | boolean) => {
+  const handleInputChange = (field: keyof SignupData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -50,8 +43,8 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   };
 
   const validateStep1 = () => {
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim()) {
-      setError('Please fill in all required fields');
+    if (!formData.email.trim()) {
+      setError('Please enter your email address');
       return false;
     }
 
@@ -64,33 +57,91 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   };
 
   const validateStep2 = () => {
-    if (!formData.password || formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    if (!formData.otp.trim()) {
+      setError('Please enter the OTP code');
       return false;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    if (!formData.name.trim()) {
+      setError('Please enter your name');
       return false;
     }
 
-    if (!formData.agreeToTerms) {
-      setError('Please agree to the Terms of Service and Privacy Policy');
+    if (!formData.phone.trim()) {
+      setError('Please enter your phone number');
+      return false;
+    }
+
+    if (!formData.dateOfBirth) {
+      setError('Please enter your date of birth');
       return false;
     }
 
     return true;
   };
 
-  const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2);
+  const handleSendOTP = async () => {
+    if (!validateStep1()) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/v1/patients/auth/signup/step1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOtpSent(true);
+        setStep(2);
+      } else {
+        setError(data.message || 'Failed to send OTP');
+      }
+    } catch (err: any) {
+      setError('Failed to send OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleBack = () => {
     setStep(1);
+    setOtpSent(false);
     setError(null);
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/v1/patients/auth/resend-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setError(null);
+        // Could show a success message here
+      } else {
+        setError(data.message || 'Failed to resend OTP');
+      }
+    } catch (err: any) {
+      setError('Failed to resend OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,33 +153,38 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     setError(null);
 
     try {
-      const submitData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone || undefined,
-        dateOfBirth: formData.dateOfBirth || undefined,
-        gender: formData.gender || undefined
-      };
+      const response = await fetch('/api/v1/patients/auth/signup/step2', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          otp: formData.otp.trim(),
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          dateOfBirth: formData.dateOfBirth,
+          insuranceProvider: formData.insuranceProvider || undefined
+        }),
+      });
 
-      await signup(submitData);
-      // Success is handled in the auth context
+      const data = await response.json();
+
+      if (data.success) {
+        // Success is handled by the response (JWT cookie is set)
+        window.location.reload(); // Refresh to update auth state
+      } else {
+        setError(data.message || 'Failed to create account');
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError('Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignup = () => {
-    // TODO: Implement Google OAuth
-    console.log('Google signup clicked');
-    setError('Google signup coming soon!');
-  };
-
-  const isStep1Valid = formData.firstName && formData.lastName && formData.email;
-  const isStep2Valid = formData.password && formData.confirmPassword && formData.agreeToTerms;
+  const isStep1Valid = formData.email;
+  const isStep2Valid = formData.otp && formData.name && formData.phone && formData.dateOfBirth;
 
   return (
     <div>
@@ -143,41 +199,6 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
       <form onSubmit={step === 2 ? handleSubmit : (e) => e.preventDefault()}>
         {step === 1 && (
           <div className="space-y-4">
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name *
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  required
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="First name"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name *
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  required
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -194,17 +215,84 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your email"
               />
+              <p className="mt-1 text-xs text-gray-500">We'll send you a verification code</p>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4">
+            {/* Email (read-only) */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                readOnly
+                value={formData.email}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+              />
             </div>
 
-            {/* Phone (Optional) */}
+            {/* OTP */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+                  Verification Code *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={isLoading}
+                  className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
+                >
+                  Resend Code
+                </button>
+              </div>
+              <input
+                id="otp"
+                name="otp"
+                type="text"
+                required
+                value={formData.otp}
+                onChange={(e) => handleInputChange('otp', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter 6-digit code"
+                maxLength={6}
+              />
+              <p className="mt-1 text-xs text-gray-500">Check your email for the verification code</p>
+            </div>
+
+            {/* Name */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name *
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            {/* Phone */}
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                Phone Number *
               </label>
               <input
                 id="phone"
                 name="phone"
                 type="tel"
+                required
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -212,116 +300,36 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
               />
             </div>
 
-            {/* Additional Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth
-                </label>
-                <input
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-2">
-                  Gender
-                </label>
-                <select
-                  id="gender"
-                  name="gender"
-                  value={formData.gender || ''}
-                  onChange={(e) => handleInputChange('gender', e.target.value as any)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select...</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer-not-to-say">Prefer not to say</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-4">
-            {/* Password Fields */}
+            {/* Date of Birth */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password *
+              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Birth *
               </label>
               <input
-                id="password"
-                name="password"
-                type="password"
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
                 required
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
+                value={formData.dateOfBirth}
+                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your password"
-              />
-              <p className="mt-1 text-xs text-gray-500">Password must be at least 6 characters long</p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password *
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Confirm your password"
               />
             </div>
 
-            {/* Terms and Newsletter */}
-            <div className="space-y-3">
-              <div className="flex items-start">
-                <input
-                  id="agreeToTerms"
-                  name="agreeToTerms"
-                  type="checkbox"
-                  checked={formData.agreeToTerms}
-                  onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
-                />
-                <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-700">
-                  I agree to the{' '}
-                  <button type="button" className="text-blue-600 hover:text-blue-500">
-                    Terms of Service
-                  </button>{' '}
-                  and{' '}
-                  <button type="button" className="text-blue-600 hover:text-blue-500">
-                    Privacy Policy
-                  </button>
-                </label>
-              </div>
-
-              <div className="flex items-start">
-                <input
-                  id="subscribeNewsletter"
-                  name="subscribeNewsletter"
-                  type="checkbox"
-                  checked={formData.subscribeNewsletter}
-                  onChange={(e) => handleInputChange('subscribeNewsletter', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
-                />
-                <label htmlFor="subscribeNewsletter" className="ml-2 block text-sm text-gray-700">
-                  Send me appointment reminders and dental health tips
-                </label>
-              </div>
+            {/* Insurance Provider (Optional) */}
+            <div>
+              <label htmlFor="insuranceProvider" className="block text-sm font-medium text-gray-700 mb-2">
+                Insurance Provider (Optional)
+              </label>
+              <input
+                id="insuranceProvider"
+                name="insuranceProvider"
+                type="text"
+                value={formData.insuranceProvider}
+                onChange={(e) => handleInputChange('insuranceProvider', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your insurance provider"
+              />
             </div>
           </div>
         )}
@@ -348,8 +356,8 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
           <Button
             type={step === 1 ? "button" : "submit"}
-            onClick={step === 1 ? handleNext : undefined}
-            disabled={step === 1 ? !isStep1Valid : (!isStep2Valid || isLoading)}
+            onClick={step === 1 ? handleSendOTP : undefined}
+            disabled={step === 1 ? (!isStep1Valid || isLoading) : (!isStep2Valid || isLoading)}
             className={`${step === 2 ? 'flex-1' : 'w-full'} bg-blue-600 hover:bg-blue-700`}
           >
             {isLoading ? (
@@ -358,43 +366,15 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Creating account...
+                {step === 1 ? 'Sending code...' : 'Creating account...'}
               </div>
             ) : step === 1 ? (
-              'Next'
+              'Send Verification Code'
             ) : (
               'Create Account'
             )}
           </Button>
         </div>
-
-        {/* Google Signup (only on step 1) */}
-        {step === 1 && (
-          <>
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleSignup}
-              className="w-full bg-white border border-gray-300 text-gray-700 py-2.5 px-4 rounded-md font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
-            >
-              <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Continue with Google
-            </button>
-          </>
-        )}
 
         {/* Switch to Login */}
         <p className="text-center text-sm text-gray-600 mt-4">

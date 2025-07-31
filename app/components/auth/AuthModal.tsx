@@ -18,8 +18,8 @@ export function AuthModal() {
   if (!authModal.isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md p-4">
+      <div className="bg-white/95 backdrop-blur-xl rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative shadow-2xl border border-white/20">
         {/* Close Button */}
         <button
           onClick={hideAuthModal}
@@ -31,7 +31,7 @@ export function AuthModal() {
         </button>
 
         {/* Header */}
-        <div className="text-center p-6 border-b border-gray-200">
+        <div className="text-center p-6 border-b border-gray-200/50">
           <div className="mx-auto h-12 w-auto flex items-center justify-center mb-4">
             <h1 className="text-2xl font-bold text-blue-600">DentalCare+</h1>
           </div>
@@ -47,12 +47,12 @@ export function AuthModal() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-gray-100 m-6 rounded-lg p-1">
+        <div className="flex bg-gray-100/70 m-6 rounded-lg p-1 backdrop-blur-sm">
           <button
             onClick={() => setCurrentAction('login')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
               currentAction === 'login'
-                ? 'bg-white text-blue-600 shadow-sm'
+                ? 'bg-white/90 text-blue-600 shadow-sm backdrop-blur-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -62,7 +62,7 @@ export function AuthModal() {
             onClick={() => setCurrentAction('signup')}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
               currentAction === 'signup'
-                ? 'bg-white text-blue-600 shadow-sm'
+                ? 'bg-white/90 text-blue-600 shadow-sm backdrop-blur-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -80,7 +80,7 @@ export function AuthModal() {
         </div>
 
         {/* Benefits Reminder */}
-        <div className="bg-blue-50 border-t border-blue-100 p-6">
+        <div className="bg-blue-50/80 backdrop-blur-sm border-t border-blue-100/50 p-6">
           <h3 className="text-sm font-semibold text-blue-900 mb-3">Why sign up?</h3>
           <div className="space-y-2">
             <div className="flex items-center text-sm text-blue-800">
