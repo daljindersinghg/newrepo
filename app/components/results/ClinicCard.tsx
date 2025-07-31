@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSimpleTracking } from '../AnalyticsProvider';
+import BookingFlow from '../booking/BookingFlow';
 
 interface Clinic {
   _id: string;
@@ -45,6 +46,7 @@ interface ClinicCardProps {
 
 export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: ClinicCardProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const { track } = useSimpleTracking();
 
   const handleBookAppointment = () => {
@@ -54,7 +56,7 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
       user_email: userEmail,
       position: index + 1
     });
-    alert(`Booking appointment with ${clinic.name}. This would open the booking system.`);
+    setShowBookingModal(true);
   };
 
   const handleViewDetails = () => {
@@ -233,6 +235,27 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Booking Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto relative">
+            <button
+              onClick={() => setShowBookingModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <BookingFlow 
+              clinicId={clinic._id} 
+              clinicName={clinic.name}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -3,14 +3,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-// Extend Window interface to include google
-declare global {
-  interface Window {
-    google: typeof google;
-    selectClinic: (clinicId: string) => void;
-  }
-}
-
 interface Clinic {
   _id: string;
   name: string;
