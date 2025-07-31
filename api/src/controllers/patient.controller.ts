@@ -11,11 +11,8 @@ export class PatientController {
     try {
       const patientData: Partial<IPatient> = req.body;
       
-      const patient = await PatientService.createPatient(patientData);
 
-      // Remove password from response
-      const patientResponse = patient.toObject();
-      delete patientResponse.password;
+
       
       res.status(201).json({
         success: true,

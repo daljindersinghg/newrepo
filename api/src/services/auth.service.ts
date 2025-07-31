@@ -49,6 +49,13 @@ export class AuthService {
   }
 
   /**
+   * Generate JWT token for patients (public method for patient service)
+   */
+  static generatePatientToken(patientId: string): string {
+    return this.generateToken(patientId);
+  }
+
+  /**
    * User signup
    */
   static async signup(signupData: SignupData): Promise<AuthResult> {

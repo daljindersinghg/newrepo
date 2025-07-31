@@ -3,6 +3,7 @@ import express from "express";
 import pingRouter from "./ping.router";
 import adminRouter from "./admin.router";
 import patientRouter from "./patient.router";
+import patientAuthRouter from "./patientAuth.router";
 import publicRouter from "./public.router";
 import authRouter from "./auth.router";
 import appointmentRouter from "./appointment.router"; // Add this import
@@ -14,6 +15,9 @@ v1Router.use("/ping", pingRouter);
 
 // Authentication endpoints
 v1Router.use("/auth", authRouter);
+
+// Patient authentication endpoints (passwordless OTP-based)
+v1Router.use("/patients/auth", patientAuthRouter);
 
 // Public endpoints (no authentication required)
 v1Router.use("/public", publicRouter);
