@@ -391,7 +391,7 @@ export class AvailabilityService {
       if (conflictingAppointment) {
         slot.available = false;
         slot.type = 'booked';
-        slot.appointmentId = conflictingAppointment._id.toString();
+        slot.appointmentId = (conflictingAppointment._id as any).toString();
       }
 
       // Only include the slot if it's available or if we want to include unavailable slots

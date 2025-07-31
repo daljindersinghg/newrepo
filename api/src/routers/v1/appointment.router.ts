@@ -91,7 +91,7 @@ appointmentRouter.get(
   async (req, res, next) => {
     try {
       const { patientId } = req.params;
-      const { status, startDate, endDate, page = '1', limit = '10' } = req.query;
+      const { status, startDate, endDate } = req.query;
 
       // Build query filters
       const filters: any = { patient: patientId };
@@ -133,8 +133,7 @@ appointmentRouter.get(
   // authenticatePatient,
   async (req, res, next) => {
     try {
-      const { patientId } = req.params;
-      const { limit = '5' } = req.query;
+      // const { patientId } = req.params;
 
       // This would get appointments from today onwards
       const today = new Date();
@@ -186,7 +185,7 @@ appointmentRouter.patch(
       }
 
       // Check if new slot is available
-      const appointment = await AppointmentController.getAppointmentById(req, res, next);
+      // await AppointmentController.getAppointmentById(req, res, next);
       // Would need to implement slot availability check and reschedule logic
 
       res.json({
@@ -247,10 +246,7 @@ appointmentRouter.get(
       const { clinicId } = req.params;
       const { 
         date, 
-        status, 
-        page = '1', 
-        limit = '20',
-        sortBy = 'appointmentDate'
+        status
       } = req.query;
 
       // Build filters for clinic appointments
@@ -288,8 +284,8 @@ appointmentRouter.get(
         data: {
           appointments: [],
           pagination: {
-            page: parseInt(page as string),
-            limit: parseInt(limit as string),
+            page: 1,
+            limit: 20,
             total: 0,
             pages: 0
           }

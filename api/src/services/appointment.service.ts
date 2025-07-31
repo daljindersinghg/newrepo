@@ -59,7 +59,7 @@ export class AppointmentService {
       const duration = appointmentData.duration || 30;
       
       const isAvailable = await AvailabilityService.isSlotAvailable(
-        appointmentData.clinic as string,
+        appointmentData.clinic as any,
         appointmentDate,
         duration
       );
@@ -107,6 +107,22 @@ export class AppointmentService {
       throw error;
     } finally {
       session.endSession();
+    }
+  }
+
+  /**
+   * Update appointment
+   */
+  static async updateAppointment(appointmentId: string, updateData: Partial<IAppointment>): Promise<IAppointment | null> {
+    try {
+      const updatedAppointment = await Appointment.findByIdAndUpdate(
+        appointmentId,
+        updateData,
+        { new: true, runValidators: true }
+      );
+      return updatedAppointment;
+    } catch (error: any) {
+      throw error;
     }
   }
 

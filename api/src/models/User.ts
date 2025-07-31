@@ -137,14 +137,14 @@ UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });
 
 // Pre-save middleware to hash password
-UserSchema.pre('save', async function(next) {
+UserSchema.pre<IUser>('save', async function(next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
 
   try {
     // Hash password with cost of 12
     const salt = await bcrypt.genSalt(12);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(this.password as string, salt);
     next();
   } catch (error: any) {
     next(error);
@@ -159,7 +159,7 @@ UserSchema.pre('save', function(next) {
 
 // Instance method to compare password
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password as string);
 };
 
 // Instance method to get full name

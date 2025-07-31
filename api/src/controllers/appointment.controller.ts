@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppointmentService } from "../services/appointment.service";
 import logger from "../config/logger.config";
-import { IAppointment } from "../models";
 
 export class AppointmentController {
   static async createAppointment(
@@ -10,9 +9,9 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
-      const appointmentData: IAppointment = req.body;
+      const appointmentData: any = req.body;
       const newAppointment =
-        await AppointmentService.createAppoint(appointmentData);
+        await AppointmentService.createAppointment(appointmentData);
       res.status(201).json(newAppointment);
     } catch (error) {
       logger.error("Error creating appointment:", error);
@@ -43,7 +42,7 @@ export class AppointmentController {
   ) {
     try {
       const appointmentId = req.params.id;
-      const updateData: Partial<IAppointment> = req.body;
+      const updateData: any = req.body;
       const updatedAppointment = await AppointmentService.updateAppointment(
         appointmentId,
         updateData

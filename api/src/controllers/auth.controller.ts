@@ -1,7 +1,10 @@
 // api/src/controllers/auth.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
-import logger from '../config/logger.config';
+
+interface AuthRequest extends Request {
+  userId?: string;
+}
 
 export class AuthController {
   /**
@@ -48,7 +51,6 @@ export class AuthController {
         }
       });
     } catch (error: any) {
-      logger.error('Signup error:', error);
       
       if (error.message.includes('already exists')) {
         res.status(400).json({
@@ -98,7 +100,6 @@ export class AuthController {
         }
       });
     } catch (error: any) {
-      logger.error('Login error:', error);
       
       if (error.message.includes('Invalid email or password')) {
         res.status(401).json({
@@ -115,10 +116,17 @@ export class AuthController {
   /**
    * Get current user profile
    */
-  static async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async getProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // @ts-ignore - userId is set by auth middleware
       const userId = req.userId;
+      
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+        return;
+      }
       
       const user = await AuthService.getUserById(userId);
       
@@ -135,7 +143,6 @@ export class AuthController {
         data: { user }
       });
     } catch (error) {
-      logger.error('Get profile error:', error);
       next(error);
     }
   }
@@ -143,11 +150,18 @@ export class AuthController {
   /**
    * Update user profile
    */
-  static async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async updateProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // @ts-ignore - userId is set by auth middleware
       const userId = req.userId;
       const updateData = req.body;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+        return;
+      }
 
       const user = await AuthService.updateProfile(userId, updateData);
 
@@ -165,7 +179,6 @@ export class AuthController {
         data: { user }
       });
     } catch (error: any) {
-      logger.error('Update profile error:', error);
       
       if (error.name === 'ValidationError') {
         const messages = Object.values(error.errors).map((err: any) => err.message);
@@ -184,11 +197,18 @@ export class AuthController {
   /**
    * Change password
    */
-  static async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async changePassword(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // @ts-ignore - userId is set by auth middleware
       const userId = req.userId;
       const { currentPassword, newPassword } = req.body;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+        return;
+      }
 
       if (!currentPassword || !newPassword) {
         res.status(400).json({
@@ -213,7 +233,6 @@ export class AuthController {
         message: 'Password changed successfully'
       });
     } catch (error: any) {
-      logger.error('Change password error:', error);
       
       if (error.message.includes('Current password is incorrect')) {
         res.status(400).json({
@@ -253,7 +272,6 @@ export class AuthController {
         ...(process.env.NODE_ENV === 'development' && { resetToken })
       });
     } catch (error: any) {
-      logger.error('Password reset request error:', error);
       
       // Always return success to prevent email enumeration
       res.json({
@@ -293,7 +311,6 @@ export class AuthController {
         message: 'Password reset successfully'
       });
     } catch (error: any) {
-      logger.error('Password reset error:', error);
       
       if (error.message.includes('Token is invalid or has expired')) {
         res.status(400).json({
@@ -321,7 +338,6 @@ export class AuthController {
         message: 'Email verified successfully'
       });
     } catch (error: any) {
-      logger.error('Email verification error:', error);
       
       if (error.message.includes('Invalid verification token')) {
         res.status(400).json({
@@ -338,10 +354,17 @@ export class AuthController {
   /**
    * Refresh authentication token
    */
-  static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async refreshToken(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // @ts-ignore - userId is set by auth middleware
       const userId = req.userId;
+      
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+        return;
+      }
       
       const newToken = await AuthService.refreshToken(userId);
 
@@ -350,7 +373,6 @@ export class AuthController {
         data: { token: newToken }
       });
     } catch (error) {
-      logger.error('Token refresh error:', error);
       next(error);
     }
   }
