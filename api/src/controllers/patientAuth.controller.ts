@@ -17,6 +17,9 @@ export class PatientAuthController {
     try {
       const { email }: PatientSignupStep1Data = req.body;
 
+      console.log('TCL ~ :20 ~ PatientAuthController ~ signupStep1 ~ email::==', email)
+
+
       // Validate required fields
       if (!email) {
         res.status(400).json({

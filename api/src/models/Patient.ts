@@ -3,11 +3,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 import crypto from 'crypto';
 
 export interface IPatient extends Document {
-  // Required fields (Step 1)
-  name: string;
-  email: string;
-  phone: string;
-  dateOfBirth: Date;
+  // Required fields (Step 2)
+  name?: string;  // Optional during step 1
+  email: string;  // Always required
+  phone?: string; // Optional during step 1
+  dateOfBirth?: Date; // Optional during step 1
 
   // Optional fields (Step 2)
   insuranceProvider?: string;
@@ -35,10 +35,10 @@ export interface IPatient extends Document {
 }
 
 const PatientSchema: Schema = new Schema({
-  // Required fields (Step 1)
+  // Optional fields during step 1, required during step 2+
   name: { 
     type: String, 
-    required: [true, 'Name is required'],
+    required: false,
     trim: true,
     maxlength: [100, 'Name cannot exceed 100 characters']
   },
@@ -47,27 +47,16 @@ const PatientSchema: Schema = new Schema({
     required: [true, 'Email is required'],
     unique: true,
     lowercase: true,
-    trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    trim: true
   },
   phone: { 
     type: String, 
-    required: [true, 'Phone number is required'],
-    trim: true,
-    match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+    required: false,
+    trim: true
   },
   dateOfBirth: {
     type: Date,
-    required: [true, 'Date of birth is required'],
-    validate: {
-      validator: function(date: Date) {
-        const today = new Date();
-        const minAge = new Date();
-        minAge.setFullYear(today.getFullYear() - 13); // Minimum age 13
-        return date <= minAge && date >= new Date('1900-01-01');
-      },
-      message: 'Patient must be at least 13 years old and date cannot be before 1900'
-    }
+    required: false
   },
 
   // Optional fields (Step 2)
@@ -80,6 +69,7 @@ const PatientSchema: Schema = new Schema({
   emailOTP: {
     type: String,
     select: false // Don't include in queries by default
+    
   },
   otpExpires: {
     type: Date,
@@ -129,9 +119,16 @@ PatientSchema.index({ isActive: 1 });
 PatientSchema.index({ signupStep: 1 });
 PatientSchema.index({ createdAt: -1 });
 
-// Pre-save middleware to update timestamps
+// Pre-save middleware to update timestamps and validate business rules
 PatientSchema.pre('save', function(next) {
   this.updatedAt = new Date();
+  
+  // Business logic validation for step 2 and completed
+  if (this.signupStep === 2 || this.signupStep === 'completed') {
+    if (!this.name || !this.phone || !this.dateOfBirth) {
+      return next(new Error('Name, phone, and date of birth are required for completing signup'));
+    }
+  }
   
   // Set completion date when completing signup
   if (this.signupStep === 'completed' && !this.signupCompletedAt) {

@@ -9,20 +9,18 @@ const router = Router();
 
 // Public routes (no authentication required)
 router.post('/signup/step1', 
-  PatientAuthValidator.signupStep1(),
-  handleValidationErrors,
+
+
   PatientAuthController.signupStep1
 );
 
 router.post('/signup/step2', 
-  PatientAuthValidator.signupStep2(),
-  handleValidationErrors,
+
   PatientAuthController.signupStep2
 );
 
 router.post('/resend-otp', 
-  PatientAuthValidator.resendOTP(),
-  handleValidationErrors,
+
   PatientAuthController.resendOTP
 );
 

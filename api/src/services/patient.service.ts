@@ -71,9 +71,6 @@ export class PatientService {
         // Create new patient with just email and OTP
         patient = new Patient({
           email,
-          name: 'Pending', // Temporary name until step 2
-          phone: 'Pending', // Temporary phone until step 2
-          dateOfBirth: new Date('1990-01-01'), // Temporary DOB until step 2
           emailOTP: hashedOTP,
           otpExpires,
           signupStep: 1,
@@ -248,7 +245,7 @@ export class PatientService {
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: patient.name === 'Pending' ? 'New Patient' : patient.name,
+        patientName: patient.name || 'New Patient',
         type: 'verification'
       });
 
@@ -312,7 +309,7 @@ export class PatientService {
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: patient.name,
+        patientName: patient.name || 'Patient',
         type: 'login'
       });
 

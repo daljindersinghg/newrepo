@@ -2,14 +2,31 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 export function Header() {
-  const { user, isAuthenticated, logout, showAuthModal } = useAuth();
+  const { showAuthModal } = useAuth();
+  const { patientInfo, isAuthenticated, logout } = usePatientAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [userMenuOpen]);
 
   const handleSignIn = () => {
     showAuthModal('login');
@@ -17,6 +34,20 @@ export function Header() {
 
   const handleSignUp = () => {
     showAuthModal('signup');
+  };
+
+  // Get first name from full name
+  const getFirstName = (fullName: string) => {
+    return fullName.split(' ')[0] || fullName;
+  };
+
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return name.charAt(0).toUpperCase();
   };
 
   return (
@@ -44,18 +75,18 @@ export function Header() {
               </a>
               
               {/* Auth Section */}
-              {isAuthenticated && user ? (
-                <div className="relative">
+              {isAuthenticated && patientInfo ? (
+                <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
                   >
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
                       <span className="text-blue-600 font-medium text-sm">
-                        {user.firstName.charAt(0).toUpperCase()}
+                        {getInitials(patientInfo.name)}
                       </span>
                     </div>
-                    <span>{user.firstName}</span>
+                    <span>{getFirstName(patientInfo.name)}</span>
                     <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
@@ -64,6 +95,10 @@ export function Header() {
                   {/* User Dropdown */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                      <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
+                        <div className="font-medium text-gray-900">{patientInfo.name}</div>
+                        <div>{patientInfo.email}</div>
+                      </div>
                       <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         Dashboard
                       </Link>
@@ -131,17 +166,17 @@ export function Header() {
               </a>
               
               {/* Mobile Auth Section */}
-              {isAuthenticated && user ? (
+              {isAuthenticated && patientInfo ? (
                 <div className="border-t border-gray-200 pt-4 pb-3">
                   <div className="flex items-center px-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-medium">
-                        {user.firstName.charAt(0).toUpperCase()}
+                        {getInitials(patientInfo.name)}
                       </span>
                     </div>
                     <div className="ml-3">
-                      <div className="text-base font-medium text-gray-800">{user.firstName} {user.lastName}</div>
-                      <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                      <div className="text-base font-medium text-gray-800">{patientInfo.name}</div>
+                      <div className="text-sm font-medium text-gray-500">{patientInfo.email}</div>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">

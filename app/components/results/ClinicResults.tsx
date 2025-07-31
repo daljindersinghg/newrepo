@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { EmailCapture } from './EmailCapture';
 import { ClinicCard } from './ClinicCard';
 import { MapView } from './MapView';
+import api from '@/lib/api';
 
 interface Clinic {
   _id: string;
@@ -123,17 +124,11 @@ export function ClinicResults() {
         params.append('specialty', specialtyFilter);
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/public/clinics?${params}`);
+      const response = await api.get(`/api/v1/public/clinics?${params}`);
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
+      if (response.data.success) {
         // Filter for active and verified clinics only
-        const activeClinics = data.data.clinics.filter((clinic: Clinic) => 
+        const activeClinics = response.data.data.clinics.filter((clinic: Clinic) => 
           clinic.isVerified == true
         );
         
@@ -148,11 +143,11 @@ export function ClinicResults() {
           sort_by: sortBy
         });
       } else {
-        throw new Error(data.message || 'Failed to fetch Clinic');
+        throw new Error(response.data.message || 'Failed to fetch Clinic');
       }
     } catch (err: any) {
       console.error('Error fetching Clinic:', err);
-      setError(`Failed to load Clinic: ${err.message}. Please try again.`);
+      setError(`Failed to load Clinic: ${err.response?.data?.message || err.message}. Please try again.`);
  
     } finally {
       setLoading(false);

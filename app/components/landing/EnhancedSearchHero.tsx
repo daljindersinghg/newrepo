@@ -1,9 +1,10 @@
 // src/components/landing/EnhancedSearchHero.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GooglePlacesAutocomplete } from './GooglePlacesAutocomplete';
 import { useSimpleTracking } from '../AnalyticsProvider';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
 
 interface PlaceResult {
   place_id: string;
@@ -20,32 +21,58 @@ interface PlaceResult {
 
 export function EnhancedSearchHero() {
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const { track } = useSimpleTracking(); // Add this
+  const { track } = useSimpleTracking();
+  const { addSearch, getLastSearch, hasSearchHistory, getRecentSearches } = useSearchHistory();
+  const [showPreviousSearch, setShowPreviousSearch] = useState(false);
+
+  useEffect(() => {
+    // Check if there's a previous search on mount
+    const lastSearch = getLastSearch();
+    if (lastSearch && hasSearchHistory()) {
+      setShowPreviousSearch(true);
+    }
+  }, []);
 
   const handleLocationSelect = (place) => {
     setSelectedLocation(place);
-    track('address_selected'); // Simple event
+    track('address_selected');
     console.log('📍 Address selected:', place.formatted_address);
   };
-  
-
 
   const handleSearch = () => {
     if (selectedLocation) {
       track('search_dentists_clicked');
       
-      // Store location data and redirect to questionnaire
-      localStorage.setItem('searchLocation', JSON.stringify({
+      // Add to search history
+      addSearch({
         address: selectedLocation.formatted_address,
         lat: selectedLocation.geometry.location.lat,
-        lng: selectedLocation.geometry.location.lng
-      }));
+        lng: selectedLocation.geometry.location.lng,
+        place_id: selectedLocation.place_id
+      });
       
-      // Navigate to questionnaire
-
+      // Navigate to results
       window.location.href = '/results';
     }
   };
+
+  const handleReturnToPreviousSearch = () => {
+    const lastSearch = getLastSearch();
+    if (lastSearch) {
+      track('return_to_previous_search_clicked');
+      
+      // Set current search location for results page
+      localStorage.setItem('searchLocation', JSON.stringify({
+        address: lastSearch.address,
+        lat: lastSearch.lat,
+        lng: lastSearch.lng
+      }));
+      
+      window.location.href = '/results';
+    }
+  };
+
+  const recentSearches = getRecentSearches(3);
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center">
       {/* Background Pattern */}
@@ -78,6 +105,56 @@ export function EnhancedSearchHero() {
           </p>
         </div>
 
+        {/* Previous Search Section */}
+        {showPreviousSearch && getLastSearch() && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 text-xl">🔄</span>
+                  </div>
+                  <div>
+                    <h3 className="text-blue-800 font-semibold text-lg mb-2">Continue Previous Search</h3>
+                    <p className="text-blue-700 text-base font-medium">
+                      {getLastSearch()?.address}
+                    </p>
+                    <p className="text-blue-600 text-sm mt-1">
+                      Searched on {new Date(getLastSearch()?.searchDate || '').toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPreviousSearch(false)}
+                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded-full transition-colors"
+                  aria-label="Dismiss previous search"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={handleReturnToPreviousSearch}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Continue Search
+                </button>
+                <button
+                  onClick={() => setShowPreviousSearch(false)}
+                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+                >
+                  New Search
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Search Card */}
         <div className="max-w-3xl mx-auto">
           <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 p-8 sm:p-12">
@@ -104,6 +181,53 @@ export function EnhancedSearchHero() {
               <p className="text-center text-gray-500 text-sm">
                 💡 Type any address and we'll show you suggestions
               </p>
+
+              {/* Recent Searches */}
+              {!selectedLocation && recentSearches.length > 0 && (
+                <div className="mt-6 bg-gray-50 rounded-xl p-4">
+                  <h4 className="text-gray-700 font-medium text-sm mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Recent Searches
+                  </h4>
+                  <div className="space-y-2">
+                    {recentSearches.map((search, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSelectedLocation({
+                            formatted_address: search.address,
+                            geometry: {
+                              location: {
+                                lat: search.lat,
+                                lng: search.lng
+                              }
+                            },
+                            place_id: search.place_id || '',
+                            name: search.address,
+                            types: []
+                          });
+                          track('recent_search_selected');
+                        }}
+                        className="w-full text-left p-3 hover:bg-white hover:shadow-sm rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span className="text-gray-600 text-sm">📍</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-900 font-medium text-sm truncate">{search.address}</p>
+                            <p className="text-gray-500 text-xs">
+                              {new Date(search.searchDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Selected Location Display */}

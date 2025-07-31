@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
+import api from '@/lib/api';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -22,7 +23,7 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   const { signup } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<SignupData>({
-    email: '',
+    email: 'indianshahishere@gmail.com',
     otp: '',
     name: '',
     phone: '',
@@ -87,24 +88,19 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/patients/auth/signup/step1', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      const response = await api.post('/api/v1/patients/auth/signup/step1', {
+
+        email: formData.email.toLowerCase().trim()
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setOtpSent(true);
         setStep(2);
       } else {
-        setError(data.message || 'Failed to send OTP');
+        setError(response.data.message || 'Failed to send OTP');
       }
     } catch (err: any) {
-      setError('Failed to send OTP. Please try again.');
+      setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -121,24 +117,18 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/patients/auth/resend-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      const response = await api.post('/api/v1/patients/auth/resend-otp', {
+        email: formData.email.toLowerCase().trim()
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setError(null);
         // Could show a success message here
       } else {
-        setError(data.message || 'Failed to resend OTP');
+        setError(response.data.message || 'Failed to resend OTP');
       }
     } catch (err: any) {
-      setError('Failed to resend OTP. Please try again.');
+      setError(err.response?.data?.message || 'Failed to resend OTP. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -153,31 +143,33 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/patients/auth/signup/step2', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
-          otp: formData.otp.trim(),
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          dateOfBirth: formData.dateOfBirth,
-          insuranceProvider: formData.insuranceProvider || undefined
-        }),
+      const response = await api.post('/api/v1/patients/auth/signup/step2', {
+        email: formData.email.toLowerCase().trim(),
+        otp: formData.otp.trim(),
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        dateOfBirth: formData.dateOfBirth,
+        insuranceProvider: formData.insuranceProvider || undefined
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
+        // Store user info in localStorage using returned patient data
+        const userInfo = {
+          name: response.data.patient?.name || formData.name.trim(),
+          email: response.data.patient?.email || formData.email.toLowerCase().trim(),
+          phone: response.data.patient?.phone || formData.phone.trim(),
+          isAuthenticated: true,
+          signupCompletedAt: new Date().toISOString()
+        };
+        localStorage.setItem('patientInfo', JSON.stringify(userInfo));
+        
         // Success is handled by the response (JWT cookie is set)
         window.location.reload(); // Refresh to update auth state
       } else {
-        setError(data.message || 'Failed to create account');
+        setError(response.data.message || 'Failed to create account');
       }
     } catch (err: any) {
-      setError('Failed to create account. Please try again.');
+      setError(err.response?.data?.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }

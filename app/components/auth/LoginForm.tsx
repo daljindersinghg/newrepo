@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
+import api from '@/lib/api';
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
@@ -55,24 +56,18 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/patients/auth/login/step1', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      const response = await api.post('/api/v1/patients/auth/login/step1', {
+        email: formData.email.toLowerCase().trim()
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setOtpSent(true);
         setStep(2);
       } else {
-        setError(data.message || 'Failed to send login code');
+        setError(response.data.message || 'Failed to send login code');
       }
     } catch (err: any) {
-      setError('Failed to send login code. Please try again.');
+      setError(err.response?.data?.message || 'Failed to send login code. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -89,24 +84,18 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/patients/auth/login/step1', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email.toLowerCase().trim() }),
+      const response = await api.post('/api/v1/patients/auth/login/step1', {
+        email: formData.email.toLowerCase().trim()
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
         setError(null);
         // Could show a success message here
       } else {
-        setError(data.message || 'Failed to resend login code');
+        setError(response.data.message || 'Failed to resend login code');
       }
     } catch (err: any) {
-      setError('Failed to resend login code. Please try again.');
+      setError(err.response?.data?.message || 'Failed to resend login code. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -124,27 +113,31 @@ export function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/patients/auth/login/step2', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email.toLowerCase().trim(),
-          otp: formData.otp.trim()
-        }),
+      const response = await api.post('/api/v1/patients/auth/login/step2', {
+        email: formData.email.toLowerCase().trim(),
+        otp: formData.otp.trim()
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data.success) {
+        // Store user info in localStorage
+        if (response.data.patient) {
+          const userInfo = {
+            name: response.data.patient.name || 'Patient',
+            email: response.data.patient.email,
+            phone: response.data.patient.phone || '',
+            isAuthenticated: true,
+            loginDate: new Date().toISOString()
+          };
+          localStorage.setItem('patientInfo', JSON.stringify(userInfo));
+        }
+        
         // Success is handled by the response (JWT cookie is set)
         window.location.reload(); // Refresh to update auth state
       } else {
-        setError(data.message || 'Invalid login code');
+        setError(response.data.message || 'Invalid login code');
       }
     } catch (err: any) {
-      setError('Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
