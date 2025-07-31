@@ -78,7 +78,7 @@ export function LocalStorageDebug() {
 
         {/* Storage Size */}
         <div className="text-xs text-gray-500">
-          Storage: {JSON.stringify(localStorage).length} bytes
+          {/* Storage: {JSON.stringify(localStorage).length} bytes */}
         </div>
       </div>
     </div>
