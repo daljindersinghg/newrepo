@@ -5,7 +5,7 @@ import adminRouter from "./admin.router";
 import patientRouter from "./patient.router";
 import patientAuthRouter from "./patientAuth.router";
 import publicRouter from "./public.router";
-import authRouter from "./auth.router";
+
 import appointmentRouter from "./appointment.router"; // Add this import
 
 const v1Router = express.Router();
@@ -13,8 +13,7 @@ const v1Router = express.Router();
 // Health check
 v1Router.use("/ping", pingRouter);
 
-// Authentication endpoints
-v1Router.use("/auth", authRouter);
+
 
 // Patient authentication endpoints (passwordless OTP-based)
 v1Router.use("/patients/auth", patientAuthRouter);

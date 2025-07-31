@@ -1,18 +1,23 @@
+// api/src/controllers/patient.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import { IPatient } from '../models';
 import { PatientService } from '../services';
-import logger from '../config/logger.config';
+
 
 export class PatientController {
   /**
-   * Create a new patient
+   * Create a new patient (admin function)
    */
   static async createPatient(req: Request, res: Response, next: NextFunction) {
     try {
       const patientData: Partial<IPatient> = req.body;
       
+      const patient = await PatientService.createPatient(patientData);
 
-
+      // Remove sensitive fields from response
+      const patientResponse = patient.toObject();
+      delete (patientResponse as any).emailOTP;
+      delete (patientResponse as any).otpExpires;
       
       res.status(201).json({
         success: true,
@@ -27,7 +32,7 @@ export class PatientController {
         });
       }
       
-      logger.error('Error creating patient:', error);
+
       next(error);
     }
   }
@@ -52,7 +57,7 @@ export class PatientController {
         data: patient
       });
     } catch (error) {
-      logger.error('Error fetching patient:', error);
+
       next(error);
     }
   }
@@ -80,7 +85,7 @@ export class PatientController {
         data: patient
       });
     } catch (error) {
-      logger.error('Error updating patient:', error);
+
       next(error);
     }
   }
@@ -100,7 +105,7 @@ export class PatientController {
         data: result
       });
     } catch (error) {
-      logger.error('Error fetching patients:', error);
+
       next(error);
     }
   }
@@ -125,7 +130,7 @@ export class PatientController {
         message: 'Patient deleted successfully'
       });
     } catch (error) {
-      logger.error('Error deleting patient:', error);
+
       next(error);
     }
   }
@@ -153,7 +158,7 @@ export class PatientController {
         data: result
       });
     } catch (error) {
-      logger.error('Error searching patients:', error);
+
       next(error);
     }
   }
