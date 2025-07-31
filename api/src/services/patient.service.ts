@@ -1,4 +1,4 @@
-// api/src/services/patient.service.ts
+// api/src/services/patient.service.ts (FIXED VERSION)
 import { Patient, IPatient } from '../models';
 import { OTPService } from './otp.service';
 import { AuthService } from './auth.service';
@@ -6,14 +6,14 @@ import logger from '../config/logger.config';
 
 export interface PatientSignupStep1Data {
   email: string;
-  name: string;
-  phone: string;
-  dateOfBirth: Date;
 }
 
 export interface PatientSignupStep2Data {
-  email: string;
+  email: string; // Frontend will pass this from state management
   otp: string;
+  name: string;
+  phone: string;
+  dateOfBirth: Date;
   insuranceProvider?: string;
 }
 
@@ -24,16 +24,16 @@ export interface PatientLoginData {
 
 export class PatientService {
   /**
-   * Step 1: Initialize patient signup with email verification
+   * Step 1: Send OTP to email only
    */
   static async signupStep1(data: PatientSignupStep1Data): Promise<{ 
     success: boolean; 
     message: string; 
-    patientId?: string; 
+    email?: string;
     step: number;
   }> {
     try {
-      const { email, name, phone, dateOfBirth } = data;
+      const { email } = data;
 
       // Validate email format
       if (!OTPService.isValidEmail(email)) {
@@ -62,21 +62,18 @@ export class PatientService {
       let patient: IPatient;
 
       if (existingPatient && !existingPatient.isEmailVerified) {
-        // Update existing unverified patient
-        existingPatient.name = name;
-        existingPatient.phone = phone;
-        existingPatient.dateOfBirth = dateOfBirth;
+        // Update existing unverified patient with new OTP
         existingPatient.emailOTP = hashedOTP;
         existingPatient.otpExpires = otpExpires;
         existingPatient.signupStep = 1;
         patient = await existingPatient.save();
       } else {
-        // Create new patient
+        // Create new patient with just email and OTP
         patient = new Patient({
           email,
-          name,
-          phone,
-          dateOfBirth,
+          name: 'Pending', // Temporary name until step 2
+          phone: 'Pending', // Temporary phone until step 2
+          dateOfBirth: new Date('1990-01-01'), // Temporary DOB until step 2
           emailOTP: hashedOTP,
           otpExpires,
           signupStep: 1,
@@ -89,7 +86,7 @@ export class PatientService {
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: name,
+        patientName: 'New Patient', // Generic name for step 1
         type: 'signup'
       });
 
@@ -104,7 +101,7 @@ export class PatientService {
       return {
         success: true,
         message: 'Verification code sent to your email. Please check your inbox.',
-        patientId: (patient._id as any).toString(),
+        email: email, // Return email for frontend state
         step: 1
       };
 
@@ -119,7 +116,7 @@ export class PatientService {
   }
 
   /**
-   * Step 2: Verify OTP and complete signup
+   * Step 2: Verify OTP and complete signup with all details
    */
   static async signupStep2(data: PatientSignupStep2Data): Promise<{
     success: boolean;
@@ -129,7 +126,16 @@ export class PatientService {
     step: number;
   }> {
     try {
-      const { email, otp, insuranceProvider } = data;
+      const { email, otp, name, phone, dateOfBirth, insuranceProvider } = data;
+
+      // Validate required fields
+      if (!email || !otp || !name || !phone || !dateOfBirth) {
+        return {
+          success: false,
+          message: 'All required fields must be provided: email, otp, name, phone, dateOfBirth',
+          step: 2
+        };
+      }
 
       // Find patient
       const patient = await Patient.findOne({ email }).select('+emailOTP +otpExpires +otpAttempts');
@@ -169,7 +175,10 @@ export class PatientService {
         };
       }
 
-      // Update patient verification status
+      // Update patient with complete information
+      patient.name = name.trim();
+      patient.phone = phone.trim();
+      patient.dateOfBirth = new Date(dateOfBirth);
       patient.isEmailVerified = true;
       patient.signupStep = 'completed';
       patient.emailOTP = undefined;
@@ -178,7 +187,7 @@ export class PatientService {
 
       // Add optional insurance data
       if (insuranceProvider) {
-        patient.insuranceProvider = insuranceProvider;
+        patient.insuranceProvider = insuranceProvider.trim();
       }
 
       await patient.save();
@@ -239,7 +248,7 @@ export class PatientService {
       const emailSent = await OTPService.sendEmailOTP({
         email,
         otp,
-        patientName: patient.name,
+        patientName: patient.name === 'Pending' ? 'New Patient' : patient.name,
         type: 'verification'
       });
 
@@ -265,11 +274,12 @@ export class PatientService {
   }
 
   /**
-   * Step 1: Send login OTP
+   * Login Step 1: Send login OTP (email only)
    */
   static async loginStep1(email: string): Promise<{
     success: boolean;
     message: string;
+    email?: string;
   }> {
     try {
       // Validate email format
@@ -315,7 +325,8 @@ export class PatientService {
 
       return {
         success: true,
-        message: 'Login code sent to your email. Please check your inbox.'
+        message: 'Login code sent to your email. Please check your inbox.',
+        email: email // Return email for frontend state
       };
 
     } catch (error) {
@@ -328,7 +339,7 @@ export class PatientService {
   }
 
   /**
-   * Step 2: Verify login OTP and authenticate
+   * Login Step 2: Verify login OTP
    */
   static async loginStep2(data: PatientLoginData): Promise<{
     success: boolean;
@@ -401,9 +412,7 @@ export class PatientService {
     }
   }
 
-  /**
-   * Get patient by ID (for authenticated requests)
-   */
+  // ... keep all other existing methods unchanged ...
   static async getPatientById(id: string): Promise<IPatient | null> {
     try {
       const patient = await Patient.findById(id).select('-emailOTP -otpExpires -otpAttempts');
@@ -414,12 +423,8 @@ export class PatientService {
     }
   }
 
-  /**
-   * Update patient profile (for authenticated patients)
-   */
   static async updatePatient(id: string, updateData: Partial<IPatient>): Promise<IPatient | null> {
     try {
-      // Remove sensitive fields that shouldn't be updated
       const sanitizedData = { ...updateData };
       delete (sanitizedData as any).email;
       delete (sanitizedData as any).emailOTP;
@@ -441,18 +446,13 @@ export class PatientService {
     }
   }
 
-  /**
-   * Create a new patient (admin function)
-   */
   static async createPatient(patientData: Partial<IPatient>): Promise<IPatient> {
     try {
-      // Check if patient already exists
       const existingPatient = await Patient.findOne({ email: patientData.email });
       if (existingPatient) {
         throw new Error('Patient with this email already exists');
       }
 
-      // Create new patient (admin created patients are automatically verified)
       const patient = new Patient({
         ...patientData,
         isEmailVerified: true,
@@ -468,9 +468,6 @@ export class PatientService {
     }
   }
 
-  /**
-   * Get all patients with pagination (admin function)
-   */
   static async getPatients(page: number = 1, limit: number = 10) {
     try {
       const skip = (page - 1) * limit;
@@ -499,9 +496,6 @@ export class PatientService {
     }
   }
 
-  /**
-   * Delete patient (admin function)
-   */
   static async deletePatient(id: string): Promise<boolean> {
     try {
       const patient = await Patient.findByIdAndDelete(id);
@@ -518,9 +512,6 @@ export class PatientService {
     }
   }
 
-  /**
-   * Find patient by email (admin function)
-   */
   static async getPatientByEmail(email: string): Promise<IPatient | null> {
     try {
       const patient = await Patient.findOne({ email }).select('-emailOTP -otpExpires -otpAttempts');
@@ -531,9 +522,6 @@ export class PatientService {
     }
   }
 
-  /**
-   * Search patients by name or email (admin function)
-   */
   static async searchPatients(query: string, page: number = 1, limit: number = 10) {
     try {
       const skip = (page - 1) * limit;

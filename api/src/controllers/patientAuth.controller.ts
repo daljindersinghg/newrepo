@@ -1,4 +1,4 @@
-// api/src/controllers/patientAuth.controller.ts
+// api/src/controllers/patientAuth.controller.ts (FIXED VERSION)
 import { Request, Response } from 'express';
 import { 
   PatientService, 
@@ -11,32 +11,24 @@ import logger from '../config/logger.config';
 export class PatientAuthController {
   /**
    * POST /api/v1/patients/auth/signup/step1
-   * Initialize patient signup with email verification
+   * Send OTP to email only
    */
   static async signupStep1(req: Request, res: Response): Promise<void> {
     try {
-      const { 
-        email, 
-        name, 
-        phone, 
-        dateOfBirth
-      }: PatientSignupStep1Data = req.body;
+      const { email }: PatientSignupStep1Data = req.body;
 
       // Validate required fields
-      if (!email || !name || !phone || !dateOfBirth) {
+      if (!email) {
         res.status(400).json({
           success: false,
-          message: 'All required fields must be provided: email, name, phone, dateOfBirth',
+          message: 'Email is required',
           step: 1
         });
         return;
       }
 
       const result = await PatientService.signupStep1({
-        email: email.toLowerCase().trim(),
-        name: name.trim(),
-        phone: phone.trim(),
-        dateOfBirth: new Date(dateOfBirth)
+        email: email.toLowerCase().trim()
       });
 
       const statusCode = result.success ? 200 : 400;
@@ -53,17 +45,24 @@ export class PatientAuthController {
 
   /**
    * POST /api/v1/patients/auth/signup/step2
-   * Verify OTP and complete patient registration
+   * Verify OTP and complete registration with all details
    */
   static async signupStep2(req: Request, res: Response): Promise<void> {
     try {
-      const { email, otp, insuranceProvider }: PatientSignupStep2Data = req.body;
+      const { 
+        email, 
+        otp, 
+        name, 
+        phone, 
+        dateOfBirth, 
+        insuranceProvider 
+      }: PatientSignupStep2Data = req.body;
 
       // Validate required fields
-      if (!email || !otp) {
+      if (!email || !otp || !name || !phone || !dateOfBirth) {
         res.status(400).json({
           success: false,
-          message: 'Email and OTP are required',
+          message: 'All required fields must be provided: email, otp, name, phone, dateOfBirth',
           step: 2
         });
         return;
@@ -72,6 +71,9 @@ export class PatientAuthController {
       const result = await PatientService.signupStep2({
         email: email.toLowerCase().trim(),
         otp: otp.trim(),
+        name: name.trim(),
+        phone: phone.trim(),
+        dateOfBirth: new Date(dateOfBirth),
         insuranceProvider
       });
 
