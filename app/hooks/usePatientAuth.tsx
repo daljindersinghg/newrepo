@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 
 interface PatientInfo {
+  _id: string; // Patient ID from backend
   name: string;
   email: string;
   phone: string;

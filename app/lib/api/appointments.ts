@@ -1,6 +1,7 @@
 import api from '../api';
 
 export interface AppointmentRequest {
+  patientId?: string; // Optional - can be extracted from auth token or provided explicitly
   clinicId: string;
   requestedDate: Date;
   requestedTime: string;
@@ -87,7 +88,12 @@ export interface Appointment {
 export const appointmentApi = {
   // Patient requests appointment
   async requestAppointment(data: AppointmentRequest): Promise<{ success: boolean; appointment: Appointment; message: string }> {
-    const response = await api.post('/api/v1/appointments/request', data);
+    if (!data.patientId) {
+      throw new Error('Patient ID is required for appointment request');
+    }
+    
+    console.log('Making appointment request with patient ID:', data.patientId);
+    const response = await api.post(`/api/v1/appointments/patient/${data.patientId}/request`, data);
     return response.data;
   },
 
@@ -104,14 +110,22 @@ export const appointmentApi = {
   },
 
   // Get patient's appointment requests
-  async getMyRequests(): Promise<{ success: boolean; appointments: Appointment[] }> {
-    const response = await api.get('/api/v1/appointments/my-requests');
+  async getMyRequests(patientId: string): Promise<{ success: boolean; appointments: Appointment[] }> {
+    if (!patientId) {
+      throw new Error('Patient ID is required to fetch appointments');
+    }
+    
+    const response = await api.get(`/api/v1/appointments/patient/${patientId}/requests`);
     return response.data;
   },
 
   // Get clinic's appointment requests
-  async getClinicRequests(): Promise<{ success: boolean; appointments: Appointment[] }> {
-    const response = await api.get('/api/v1/appointments/clinic-requests');
+  async getClinicRequests(clinicId: string): Promise<{ success: boolean; appointments: Appointment[] }> {
+    if (!clinicId) {
+      throw new Error('Clinic ID is required to fetch appointments');
+    }
+    
+    const response = await api.get(`/api/v1/appointments/clinic/${clinicId}/requests`);
     return response.data;
   },
 

@@ -77,8 +77,9 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
+      const patientId = req.params.patientId; // Get from URL parameter
       const { clinicId, requestedDate, requestedTime, duration, type, reason } = req.body;
-      const patientId = (req as any).patientId; // From auth middleware
+
       
       const appointmentRequest = await AppointmentService.createAppointmentRequest({
         patient: patientId,
@@ -179,7 +180,7 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
-      const patientId = (req as any).patientId;
+      const patientId = req.params.patientId; // Get from URL parameter
       const appointments = await AppointmentService.getPatientRequests(patientId);
       
       res.status(200).json({
@@ -198,7 +199,7 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
-      const clinicId = (req as any).clinicId;
+      const clinicId = req.params.clinicId; // Get from URL parameter
       const appointments = await AppointmentService.getClinicRequests(clinicId);
       
       res.status(200).json({

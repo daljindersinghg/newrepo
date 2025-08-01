@@ -99,13 +99,11 @@ export function Header() {
                         <div className="font-medium text-gray-900">{patientInfo.name}</div>
                         <div>{patientInfo.email}</div>
                       </div>
-                      <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        Dashboard
-                      </Link>
-                      <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                 
+                      <Link href="/patient/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         Profile
                       </Link>
-                      <Link href="/appointments" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                      <Link href="/patient/appointments" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         My Appointments
                       </Link>
                       <div className="border-t border-gray-100"></div>
@@ -180,13 +178,13 @@ export function Header() {
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">
-                    <Link href="/dashboard" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
+                    <Link href="/patient/dashboard" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
                       Dashboard
                     </Link>
-                    <Link href="/profile" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
+                    <Link href="/patient/profile" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
                       Profile
                     </Link>
-                    <Link href="/appointments" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
+                    <Link href="/patient/appointments" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
                       My Appointments
                     </Link>
                     <button
