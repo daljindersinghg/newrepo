@@ -22,12 +22,22 @@ interface PaginationResult<T> {
   };
 }
 
+interface CreateAppointmentData {
+  patient: string;
+  clinic: string;
+  appointmentDate: Date;
+  duration?: number;
+  type?: 'consultation' | 'cleaning' | 'procedure' | 'emergency' | 'follow-up';
+  reason?: string;
+  requestedTime?: string;
+}
+
 export class AppointmentService {
   
   /**
    * Create a new appointment (request-based)
    */
-  static async createAppointment(appointmentData: Partial<IAppointment>): Promise<IAppointment> {
+  static async createAppointment(appointmentData: CreateAppointmentData): Promise<IAppointment> {
     const session = await mongoose.startSession();
     
     try {
@@ -55,10 +65,19 @@ export class AppointmentService {
 
       // Create the appointment request
       const appointment = await Appointment.create([{
-        ...appointmentData,
-        status: 'requested',
-        requestedDate: new Date(),
-        requestedReason: appointmentData.reason || 'General consultation'
+        patient: appointmentData.patient,
+        clinic: appointmentData.clinic,
+        appointmentDate: appointmentData.appointmentDate,
+        duration: appointmentData.duration || 30,
+        type: appointmentData.type || 'consultation',
+        status: 'pending',
+        originalRequest: {
+          requestedDate: appointmentData.appointmentDate,
+          requestedTime: appointmentData.requestedTime || '09:00',
+          duration: appointmentData.duration || 30,
+          reason: appointmentData.reason || 'General consultation',
+          requestedAt: new Date()
+        }
       }], { session });
 
       await session.commitTransaction();
@@ -172,7 +191,7 @@ export class AppointmentService {
     additionalData?: Partial<IAppointment>
   ): Promise<IAppointment> {
     try {
-      const validStatuses = ['requested', 'pending', 'counter-offered', 'confirmed', 'rejected', 'cancelled', 'completed'];
+      const validStatuses = ['pending', 'counter-offered', 'confirmed', 'rejected', 'cancelled', 'completed'];
       if (!validStatuses.includes(status)) {
         throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
       }

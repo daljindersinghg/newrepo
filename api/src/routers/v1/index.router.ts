@@ -5,6 +5,7 @@ import adminRouter from "./admin.router";
 import patientRouter from "./patient.router";
 import patientAuthRouter from "./patientAuth.router";
 import publicRouter from "./public.router";
+import clinicRouter from "./clinic.router";
 
 import appointmentRouter from "./appointment.router"; // Add this import
 
@@ -27,11 +28,10 @@ v1Router.use("/patient", patientRouter);
 // Admin endpoints (requires admin authentication)
 v1Router.use("/admin", adminRouter);
 
-// Appointment and availability endpoints
-v1Router.use("/appointments", appointmentRouter);
+// Clinic endpoints (for clinic authentication and profile)
+v1Router.use("/clinic", clinicRouter);
 
-// You could also add these as direct routes for better organization:
-// v1Router.use("/availability", appointmentRouter); // For availability-specific routes
-// v1Router.use("/clinics", appointmentRouter); // For clinic-specific routes
+// Appointment endpoints
+v1Router.use("/appointments", appointmentRouter);
 
 export default v1Router;

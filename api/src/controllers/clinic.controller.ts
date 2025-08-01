@@ -21,18 +21,11 @@ export class ClinicController {
         return;
       }
 
-      if (!email) {
-        res.status(400).json({
-          success: false,
-          message: 'Email address is required'
-        });
-        return;
-      }
-
+      // Email is optional in Phase 1
       // Create clinic with minimal manual input
-   const clinic = await ClinicService.createClinicFromGooglePlace({
+      const clinic = await ClinicService.createClinicFromGooglePlace({
         placeId,
-        email,
+        email, // Optional
         acceptedInsurance: acceptedInsurance || []
       });
       
@@ -217,14 +210,13 @@ export class ClinicController {
 
  static async getClinics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-  
-  
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
       const active = req.query.active ? req.query.active === 'true' : undefined;
+      const authStatus = req.query.authStatus as string; // 'pending', 'setup', or undefined for all
 
-      const filters = { search, active };
+      const filters = { search, active, authStatus };
       const result = await ClinicService.getClinics(page, limit, filters);
 
       res.json({
@@ -318,6 +310,208 @@ export class ClinicController {
     } catch (error) {
       logger.error('Error toggling clinic active status:', error);
       next(error);
+    }
+  }
+
+  // ============ PHASE 2: ADMIN AUTHENTICATION SETUP ============
+
+  /**
+   * Admin sets up authentication for a clinic (Phase 2)
+   */
+  static async setupClinicAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { email, password } = req.body;
+      
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters'
+        });
+        return;
+      }
+      
+      const clinic = await ClinicService.setupClinicAuthentication(id, {
+        email,
+        password
+      });
+      
+      res.json({
+        success: true,
+        message: 'Clinic authentication setup successfully',
+        data: {
+          id: clinic._id,
+          name: clinic.name,
+          email: clinic.email,
+          authSetup: clinic.authSetup,
+          isApproved: clinic.isApproved,
+          active: clinic.active
+        }
+      });
+    } catch (error: any) {
+      logger.error('Error setting up clinic auth:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Get clinics pending auth setup
+   */
+  /**
+   * Update clinic authentication credentials
+   */
+  static async updateClinicAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { email, password } = req.body;
+      const clinic = await ClinicService.updateClinicAuth(id, {
+        email,
+        password
+      });
+      
+      res.json({
+        success: true,
+        message: 'Clinic authentication updated successfully',
+        data: {
+          id: clinic._id,
+          name: clinic.name,
+          email: clinic.email
+        }
+      });
+    } catch (error: any) {
+      logger.error('Error updating clinic auth:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Clinic Authentication Methods
+   */
+  static async loginClinic(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email, password } = req.body;
+
+      console.log('🚀 ~ :402 ~ ClinicController ~ loginClinic ~ password::==', password)
+
+      
+      if (!email || !password) {
+        res.status(400).json({
+          success: false,
+          message: "Email and password are required"
+        });
+        return;
+      }
+
+      const result = await ClinicService.loginClinic(email, password);
+
+      console.log('🚀 ~ :412 ~ ClinicController ~ loginClinic ~ result::==', result)
+
+      
+      // Set HTTP-only cookie for security
+      res.cookie('clinicToken', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Logged in successfully",
+        data: {
+          clinic: result.clinic,
+          token: result.token
+        }
+      });
+    } catch (error: any) {
+      res.status(401).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async logoutClinic(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Clear the cookie
+      res.clearCookie('clinicToken');
+      
+      res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  /**
+   * Clinic Profile Methods (Simple)
+   */
+  static async getClinicProfile(req: any, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // req.clinic is set by clinicAuth middleware
+      const clinic = req.clinic;
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          id: clinic._id,
+          name: clinic.name,
+          email: clinic.email,
+          phone: clinic.phone,
+          address: clinic.address,
+          services: clinic.services,
+          website: clinic.website,
+          hours: clinic.hours,
+          thumbnail: clinic.thumbnail
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async updateClinicProfile(req: any, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const clinic = req.clinic;
+      const updates = req.body;
+      
+      // Only allow certain fields to be updated
+      const allowedUpdates = ['name', 'phone', 'services', 'website', 'hours'];
+      const filteredUpdates: any = {};
+      
+      Object.keys(updates).forEach(key => {
+        if (allowedUpdates.includes(key)) {
+          filteredUpdates[key] = updates[key];
+        }
+      });
+
+      const updatedClinic = await ClinicService.updateClinic(clinic._id, filteredUpdates);
+      
+      res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        data: updatedClinic
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
     }
   }
 }

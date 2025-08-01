@@ -155,6 +155,7 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
       if (response.data.success) {
         // Store user info in localStorage using returned patient data
         const userInfo = {
+          _id: response.data.patient?._id, // Store patient ID
           name: response.data.patient?.name || formData.name.trim(),
           email: response.data.patient?.email || formData.email.toLowerCase().trim(),
           phone: response.data.patient?.phone || formData.phone.trim(),

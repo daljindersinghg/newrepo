@@ -12,12 +12,13 @@ export default function PatientAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { patientInfo } = usePatientAuth();
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await appointmentApi.getMyRequests();
+      const result = await appointmentApi.getMyRequests(patientInfo._id);
       
       if (result.success) {
         setAppointments(result.appointments);

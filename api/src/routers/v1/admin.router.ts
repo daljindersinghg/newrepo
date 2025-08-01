@@ -2,15 +2,19 @@
 import express from "express";
 import { AdminController } from "../../controllers/admin.controller";
 import { ClinicController } from "../../controllers/clinic.controller";
+import { adminAuth } from "../../middleware/adminAuth.middleware";
 
 const adminRouter = express.Router();
 
-// ============ SPECIFIC ROUTES FIRST ============
-// These MUST come before any /:id routes
-
-// Admin Authentication
+// ============ PUBLIC ROUTES (NO AUTH) ============
+// Admin Authentication - these don't require auth
 adminRouter.post("/", AdminController.createAdmin);
 adminRouter.post("/login", AdminController.loginAdmin);
+adminRouter.post("/logout", AdminController.logoutAdmin);
+
+// ============ PROTECTED ROUTES (REQUIRE AUTH) ============
+// Apply admin authentication to all routes below
+adminRouter.use(adminAuth);
 
 // Clinic Management - SPECIFIC routes first
 adminRouter.get("/clinics", ClinicController.getClinics);
@@ -22,11 +26,14 @@ adminRouter.get("/google-places/search", ClinicController.searchGooglePlaces);
 adminRouter.post("/clinics/bulk-sync", ClinicController.bulkSyncClinics);
 
 // Clinic routes with parameters
-// adminRouter.get("/clinics/:id", ClinicController.getClinic);
 adminRouter.put("/clinics/:id", ClinicController.updateClinic);
 adminRouter.put("/clinics/:id/toggle-active", ClinicController.toggleClinicActiveStatus);
 adminRouter.delete("/clinics/:id", ClinicController.deleteClinic);
 adminRouter.post("/clinics/:id/sync-google", ClinicController.syncClinicWithGoogle);
+
+// Phase 2: Setup authentication for specific clinic
+adminRouter.post("/clinics/:id/setup-auth", ClinicController.setupClinicAuth);
+adminRouter.put("/clinics/:id/update-auth", ClinicController.updateClinicAuth);
 
 // ============ PARAMETERIZED ROUTES LAST ============
 // These MUST come AFTER all specific routes

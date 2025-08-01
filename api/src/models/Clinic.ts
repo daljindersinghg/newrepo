@@ -1,6 +1,7 @@
 // api/src/models/Clinic.ts (Updated for Phase 1)
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 interface LocationDetails {
   latitude: number;
@@ -50,8 +51,8 @@ export interface IClinic extends Document {
   };
   
   // Authentication fields (NEW)
-  password: string;
-  isEmailVerified: boolean;
+  password?: string; // Make optional since it's added later
+  isEmailVerified?: boolean;
   emailVerificationToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
@@ -60,8 +61,11 @@ export interface IClinic extends Document {
   // Active status for clinic
   active?: boolean;
   
+  // Auth setup tracking (NEW)
+  authSetup?: boolean;
+  
   // Admin approval fields (NEW)
-  isApproved: boolean;
+  isApproved?: boolean;
   approvedAt?: Date;
   approvedBy?: mongoose.Types.ObjectId; // ref: Admin
   
@@ -89,6 +93,7 @@ export interface IClinic extends Document {
   
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
+  getJWTToken(): Promise<string>;
 }
 
 const ClinicSchema: Schema = new Schema({
@@ -110,18 +115,19 @@ const ClinicSchema: Schema = new Schema({
   },
   email: { 
     type: String, 
-    required: [true, 'Email is required'],
+    required: false, // ✅ Make optional for Phase 1 (Google Places creation)
     unique: true,
+    sparse: true, // ✅ Allow unique constraint with null values
     lowercase: true,
     trim: true
   },
   
-  // Authentication fields (NEW)
+  // Authentication fields (OPTIONAL - for future implementation)
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: false, // Make optional for now
     minlength: [6, 'Password must be at least 6 characters'],
-    select: false // Don't include password in queries by default
+    select: false
   },
   isEmailVerified: {
     type: Boolean,
@@ -178,6 +184,13 @@ const ClinicSchema: Schema = new Schema({
     type: Boolean,
     default: false,
     index: true // For efficient filtering
+  },
+  
+  // Auth setup tracking (NEW)
+  authSetup: {
+    type: Boolean,
+    default: false, // True when admin sets up email/password
+    index: true
   },
   
   // Admin approval fields (NEW)
@@ -266,22 +279,52 @@ ClinicSchema.index({
 ClinicSchema.pre('save', async function(next) {
   this.updatedAt = new Date();
   
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) return next();
+  // Only hash the password if it has been modified (or is new) AND it exists
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     // Hash password with cost of 12
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password as string, salt);
+    console.log('🔒 Password hashed for clinic:', this.email || this._id);
     next();
   } catch (error: any) {
+    console.error('❌ Password hashing failed:', error);
     next(error);
   }
 });
 
 // Instance method to compare password
 ClinicSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password as string);
+  if (!this.password) {
+    console.log('❌ No password stored for clinic:', this.email || this._id);
+    return false;
+  }
+  
+  try {
+    const isMatch = await bcrypt.compare(candidatePassword, this.password as string);
+    console.log('🔑 Password comparison result for clinic:', this.email || this._id, '- Match:', isMatch);
+    return isMatch;
+  } catch (error: any) {
+    console.error('❌ Password comparison failed:', error);
+    return false;
+  }
 };
 
-export default mongoose.model<IClinic>('Clinic', ClinicSchema);
+// Instance method to generate JWT token
+ClinicSchema.methods.getJWTToken = async function(): Promise<string> {
+  return jwt.sign(
+    { 
+      id: this._id,
+      email: this.email,
+      type: 'clinic'
+    },
+    process.env.JWT_SECRET || 'your-secret-key',
+    {
+      expiresIn: '24h'
+    }
+  );
+};
+
+export const Clinic = mongoose.model<IClinic>('Clinic', ClinicSchema);
+export default Clinic;

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { format, addDays, startOfDay, isSameDay, setHours, setMinutes } from 'date-fns';
 import { appointmentApi, AppointmentRequest } from '@/lib/api/appointments';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 interface TimeSlotRequestPickerProps {
   clinicId: string;
@@ -19,6 +20,7 @@ export default function TimeSlotRequestPicker({
   duration = 30,
   onSuccess
 }: TimeSlotRequestPickerProps) {
+  const { patientInfo } = usePatientAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
   const [reason, setReason] = useState<string>('');
@@ -72,6 +74,7 @@ export default function TimeSlotRequestPicker({
 
     try {
       const requestData: AppointmentRequest = {
+        patientId: patientInfo?._id, // Include patient ID from auth context
         clinicId: clinicId,
         requestedDate: selectedSlot,
         requestedTime: format(selectedSlot, 'HH:mm'),
@@ -120,10 +123,10 @@ export default function TimeSlotRequestPicker({
         </p>
         <div className="flex gap-3 justify-center">
           <a
-            href="/appointments"
+            href="/patient/dashboard" 
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-decoration-none"
           >
-            View My Requests
+            Go to Dashboard
           </a>
           <button
             type="button"

@@ -13,7 +13,7 @@ export default function AppointmentNotification({ onClose }: AppointmentNotifica
   const { isAuthenticated } = usePatientAuth();
   const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-
+   const { patientInfo } = usePatientAuth();
   useEffect(() => {
     if (isAuthenticated) {
       loadRecentAppointments();
@@ -22,7 +22,8 @@ export default function AppointmentNotification({ onClose }: AppointmentNotifica
 
   const loadRecentAppointments = async () => {
     try {
-      const result = await appointmentApi.getMyRequests();
+   
+      const result = await appointmentApi.getMyRequests(patientInfo?._id);
       if (result.success) {
         // Show only recent appointments that need attention
         const needsAttention = result.appointments.filter(apt => 

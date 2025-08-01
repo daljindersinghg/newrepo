@@ -1,95 +1,47 @@
 // api/src/routers/v1/appointment.router.ts (Complete Implementation)
 import express from 'express';
 import { AppointmentController } from '../../controllers/appointment.controller';
-import { AvailabilityController } from '../../controllers/availability.controller';
 // import { authenticatePatient, authenticateAdmin } from '../../middleware/auth.middleware';
 // import { validateRequestBody } from '../../validators';
 // import { appointmentSchema, rescheduleSchema } from '../../validators/appointment.validator';
 
 const appointmentRouter = express.Router();
-
-// ============ AVAILABILITY ENDPOINTS ============
-// These endpoints are for checking availability before booking
-
-// Get available time slots for a specific clinic and date
-appointmentRouter.get(
-  '/clinics/:clinicId/availability',
-  AvailabilityController.getAvailableSlots
-);
-
-// Get weekly availability for calendar view
-appointmentRouter.get(
-  '/clinics/:clinicId/availability/weekly',
-  AvailabilityController.getWeeklyAvailability
-);
-
-// Check if specific slot is available
-appointmentRouter.get(
-  '/clinics/:clinicId/slots/check',
-  AvailabilityController.checkSlotAvailability
-);
-
-// Get next available appointment slot
-appointmentRouter.get(
-  '/clinics/:clinicId/slots/next-available',
-  AvailabilityController.getNextAvailableSlot
-);
-
-// Get clinic operating hours
-appointmentRouter.get(
-  '/clinics/:clinicId/hours',
-  AvailabilityController.getClinicHours
-);
-
-// Reserve a time slot temporarily (for booking flow)
-appointmentRouter.post(
-  '/clinics/:clinicId/slots/reserve',
-  // authenticatePatient, // Would authenticate the patient
-  AvailabilityController.reserveSlot
-);
-
 // ============ NEW WORKFLOW ENDPOINTS ============
 // Request-response based appointment booking
 
-// Patient requests appointment
+// Patient requests appointment - now takes patientId as URL parameter
 appointmentRouter.post(
-  '/request',
-  // authenticatePatient,
+  '/patient/:patientId/request',
   AppointmentController.requestAppointment
 );
 
 // Clinic responds to appointment request
 appointmentRouter.post(
   '/:id/clinic-response',
-  // authenticateClinic,
   AppointmentController.clinicResponse
 );
 
 // Patient responds to clinic counter-offer
 appointmentRouter.post(
   '/:id/patient-response',
-  // authenticatePatient,
   AppointmentController.patientResponse
 );
 
-// Get patient's appointment requests
+// Get patient's appointment requests - now takes patientId as URL parameter
 appointmentRouter.get(
-  '/my-requests',
-  // authenticatePatient,
+  '/patient/:patientId/requests',
   AppointmentController.getMyRequests
 );
 
-// Get clinic's appointment requests
+// Get clinic's appointment requests - now takes clinicId as URL parameter
 appointmentRouter.get(
-  '/clinic-requests',
-  // authenticateClinic,
+  '/clinic/:clinicId/requests',
   AppointmentController.getClinicRequests
 );
 
 // Cancel appointment
 appointmentRouter.patch(
   '/:id/cancel',
-  // authenticatePatient or authenticateClinic,
   AppointmentController.cancelAppointment
 );
 
@@ -99,30 +51,24 @@ appointmentRouter.patch(
 // Create a new appointment (main booking endpoint)
 appointmentRouter.post(
   '/',
-  // authenticatePatient,
-  // validateRequestBody(appointmentSchema),
   AppointmentController.createAppointment
 );
 
 // Get appointment by ID
 appointmentRouter.get(
   '/:id',
-  // authenticatePatient, // Should check if patient owns this appointment
   AppointmentController.getAppointmentById
 );
 
 // Update appointment details
 appointmentRouter.put(
   '/:id',
-  // authenticatePatient,
-  // validateRequestBody(rescheduleSchema),
   AppointmentController.updateAppointment
 );
 
 // Cancel/Delete appointment
 appointmentRouter.delete(
   '/:id',
-  // authenticatePatient,
   AppointmentController.deleteAppointment
 );
 
@@ -132,7 +78,6 @@ appointmentRouter.delete(
 // Get all appointments for a specific patient
 appointmentRouter.get(
   '/patient/:patientId/appointments',
-  // authenticatePatient,
   async (req, res, next) => {
     try {
       const { patientId } = req.params;
@@ -175,7 +120,6 @@ appointmentRouter.get(
 // Get upcoming appointments for a patient
 appointmentRouter.get(
   '/patient/:patientId/upcoming',
-  // authenticatePatient,
   async (req, res, next) => {
     try {
       // const { patientId } = req.params;
@@ -206,7 +150,6 @@ appointmentRouter.get(
 // Reschedule appointment
 appointmentRouter.patch(
   '/:id/reschedule',
-  // authenticatePatient,
   async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -229,9 +172,8 @@ appointmentRouter.patch(
         return;
       }
 
-      // Check if new slot is available
-      // await AppointmentController.getAppointmentById(req, res, next);
-      // Would need to implement slot availability check and reschedule logic
+      // Update appointment with new date/time
+      // Would implement reschedule logic here
 
       res.json({
         success: true,
@@ -257,7 +199,6 @@ appointmentRouter.patch(
 // Get all appointments for a clinic (admin view)
 appointmentRouter.get(
   '/clinic/:clinicId/appointments',
-  // authenticateAdmin,
   async (req, res, next) => {
     try {
       const { clinicId } = req.params;
@@ -318,7 +259,6 @@ appointmentRouter.get(
 // Update appointment status (admin action)
 appointmentRouter.patch(
   '/:id/status',
-  // authenticateAdmin,
   async (req, res, next) => {
     try {
       const { id } = req.params;
