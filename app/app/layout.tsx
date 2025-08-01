@@ -5,8 +5,8 @@ import "./globals.css";
 import { PostHogProvider } from "@/providers/PostHogProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { AuthModal } from "@/components/auth/AuthModal";
-
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,6 +37,8 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <AuthModal />
+            <Analytics />
+            <SpeedInsights/>
             {/* <LocalStorageDebug /> */}
           </AuthProvider>
         </PostHogProvider>
