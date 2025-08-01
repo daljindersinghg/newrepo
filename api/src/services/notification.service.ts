@@ -1,5 +1,6 @@
 import { Notification, IAppointment, Patient, Clinic } from '../models';
 import logger from '../config/logger.config';
+import { EmailService } from './email.service';
 
 export class NotificationService {
   static async sendAppointmentRequest(appointment: IAppointment) {
@@ -83,8 +84,50 @@ export class NotificationService {
 
       await notification.save();
       
-      // TODO: Send email notification
-      // await this.sendEmail(patient.email, notification.title, notification.message);
+      // Send email notification based on response type
+      try {
+        switch (latestResponse.responseType) {
+          case 'confirmation':
+            await EmailService.sendAppointmentConfirmation(
+              patient.email,
+              patient.name || patient.email,
+              clinic.name,
+              appointment.appointmentDate,
+              appointment.originalRequest.requestedTime,
+              appointment.duration,
+              appointment.type
+            );
+            break;
+          case 'counter-offer':
+            if (latestResponse.proposedDate && latestResponse.proposedTime) {
+              await EmailService.sendAlternativeTime(
+                patient.email,
+                patient.name || patient.email,
+                clinic.name,
+                appointment.originalRequest.requestedDate,
+                appointment.originalRequest.requestedTime,
+                latestResponse.proposedDate,
+                latestResponse.proposedTime,
+                latestResponse.proposedDuration || appointment.duration,
+                latestResponse.message
+              );
+            }
+            break;
+          case 'rejection':
+            await EmailService.sendAppointmentDeclined(
+              patient.email,
+              patient.name || patient.email,
+              clinic.name,
+              appointment.originalRequest.requestedDate,
+              appointment.originalRequest.requestedTime,
+              latestResponse.message
+            );
+            break;
+        }
+      } catch (emailError) {
+        logger.error('Error sending email notification:', emailError);
+        // Don't throw - we don't want to fail the whole operation if email fails
+      }
       
       logger.info(`Clinic response notification sent to patient ${patient._id}`);
       return notification;
