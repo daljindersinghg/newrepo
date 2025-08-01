@@ -20,7 +20,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-white">
       <Header />
       <EnhancedSearchHero />
-      <HowItWorks />
+      <HowItWorks   rewardAmount='50'/>
       {/* <Features /> */}
       {/* <TrustSection /> */}
       <CTASection />

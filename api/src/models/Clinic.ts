@@ -1,6 +1,7 @@
 // api/src/models/Clinic.ts (Updated for Phase 1)
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 interface LocationDetails {
   latitude: number;
@@ -92,6 +93,7 @@ export interface IClinic extends Document {
   
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
+  getJWTToken(): Promise<string>;
 }
 
 const ClinicSchema: Schema = new Schema({
@@ -277,22 +279,51 @@ ClinicSchema.index({
 ClinicSchema.pre('save', async function(next) {
   this.updatedAt = new Date();
   
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) return next();
+  // Only hash the password if it has been modified (or is new) AND it exists
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     // Hash password with cost of 12
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password as string, salt);
+    console.log('🔒 Password hashed for clinic:', this.email || this._id);
     next();
   } catch (error: any) {
+    console.error('❌ Password hashing failed:', error);
     next(error);
   }
 });
 
 // Instance method to compare password
 ClinicSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password as string);
+  if (!this.password) {
+    console.log('❌ No password stored for clinic:', this.email || this._id);
+    return false;
+  }
+  
+  try {
+    const isMatch = await bcrypt.compare(candidatePassword, this.password as string);
+    console.log('🔑 Password comparison result for clinic:', this.email || this._id, '- Match:', isMatch);
+    return isMatch;
+  } catch (error: any) {
+    console.error('❌ Password comparison failed:', error);
+    return false;
+  }
+};
+
+// Instance method to generate JWT token
+ClinicSchema.methods.getJWTToken = async function(): Promise<string> {
+  return jwt.sign(
+    { 
+      id: this._id,
+      email: this.email,
+      type: 'clinic'
+    },
+    process.env.JWT_SECRET || 'your-secret-key',
+    {
+      expiresIn: '24h'
+    }
+  );
 };
 
 export const Clinic = mongoose.model<IClinic>('Clinic', ClinicSchema);

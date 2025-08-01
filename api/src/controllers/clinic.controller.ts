@@ -391,4 +391,127 @@ export class ClinicController {
       next(error);
     }
   }
+
+  /**
+   * Clinic Authentication Methods
+   */
+  static async loginClinic(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email, password } = req.body;
+
+      console.log('🚀 ~ :402 ~ ClinicController ~ loginClinic ~ password::==', password)
+
+      
+      if (!email || !password) {
+        res.status(400).json({
+          success: false,
+          message: "Email and password are required"
+        });
+        return;
+      }
+
+      const result = await ClinicService.loginClinic(email, password);
+
+      console.log('🚀 ~ :412 ~ ClinicController ~ loginClinic ~ result::==', result)
+
+      
+      // Set HTTP-only cookie for security
+      res.cookie('clinicToken', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Logged in successfully",
+        data: {
+          clinic: result.clinic,
+          token: result.token
+        }
+      });
+    } catch (error: any) {
+      res.status(401).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async logoutClinic(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Clear the cookie
+      res.clearCookie('clinicToken');
+      
+      res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  /**
+   * Clinic Profile Methods (Simple)
+   */
+  static async getClinicProfile(req: any, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // req.clinic is set by clinicAuth middleware
+      const clinic = req.clinic;
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          id: clinic._id,
+          name: clinic.name,
+          email: clinic.email,
+          phone: clinic.phone,
+          address: clinic.address,
+          services: clinic.services,
+          website: clinic.website,
+          hours: clinic.hours,
+          thumbnail: clinic.thumbnail
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async updateClinicProfile(req: any, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const clinic = req.clinic;
+      const updates = req.body;
+      
+      // Only allow certain fields to be updated
+      const allowedUpdates = ['name', 'phone', 'services', 'website', 'hours'];
+      const filteredUpdates: any = {};
+      
+      Object.keys(updates).forEach(key => {
+        if (allowedUpdates.includes(key)) {
+          filteredUpdates[key] = updates[key];
+        }
+      });
+
+      const updatedClinic = await ClinicService.updateClinic(clinic._id, filteredUpdates);
+      
+      res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        data: updatedClinic
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }

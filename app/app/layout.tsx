@@ -5,7 +5,7 @@ import "./globals.css";
 import { PostHogProvider } from "@/providers/PostHogProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { LocalStorageDebug } from "@/components/debug/LocalStorageDebug";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

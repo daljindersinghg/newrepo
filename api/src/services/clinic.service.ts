@@ -1,7 +1,6 @@
 // api/src/services/clinic.service.ts (Fixed version)
 import { Clinic, IClinic } from '../models';
 import { GooglePlacesService } from './googlePlaces.service';
-import bcrypt from 'bcryptjs';
 
 interface ClinicFilters {
   search?: string;
@@ -380,7 +379,7 @@ export class ClinicService {
     }
   ): Promise<IClinic> {
     try {
-      const clinic = await Clinic.findById(clinicId);
+      const clinic = await Clinic.findById(clinicId).select('+password');
       if (!clinic) {
         throw new Error('Clinic not found');
       }
@@ -398,13 +397,10 @@ export class ClinicService {
         throw new Error('Email is already used by another clinic');
       }
 
-      // Hash password
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(authData.password, saltRounds);
-
       // Update clinic with authentication credentials
+      // Note: Password will be automatically hashed by the model's pre-save middleware
       clinic.email = authData.email;
-      clinic.password = hashedPassword;
+      clinic.password = authData.password;
       // Set basic authentication status
       clinic.authSetup = true;
       clinic.active = true;
@@ -431,7 +427,7 @@ export class ClinicService {
     }
   ): Promise<IClinic> {
     try {
-      const clinic = await Clinic.findById(clinicId);
+      const clinic = await Clinic.findById(clinicId).select('+password');
       if (!clinic) {
         throw new Error('Clinic not found');
       }
@@ -455,8 +451,8 @@ export class ClinicService {
 
       // Update password if provided
       if (authData.password) {
-        const saltRounds = 12;
-        clinic.password = await bcrypt.hash(authData.password, saltRounds);
+        // Note: Password will be automatically hashed by the model's pre-save middleware
+        clinic.password = authData.password;
       }
 
       await clinic.save();
@@ -466,5 +462,52 @@ export class ClinicService {
     } catch (error: any) {
       throw error;
     }
+  }
+
+  /**
+   * Clinic login
+   */
+  static async loginClinic(email: string, password: string) {
+    const clinic = await Clinic.findOne({ email }).select("+password");
+
+    console.log('🚀 ~ :473 ~ ClinicService ~ loginClinic ~ clinic::==', clinic)
+
+    if (!clinic) throw new Error("clinic not found");
+    
+    if (!clinic.authSetup) {
+      throw new Error("clinic authentication is not set up");
+    }
+    
+    const isMatchedPassword = await clinic.comparePassword(password);
+
+    console.log('🚀 ~ :483 ~ ClinicService ~ loginClinic ~ isMatchedPassword::==', isMatchedPassword)
+
+    if (!isMatchedPassword) {
+      throw new Error("wrong password");
+    }
+    
+    // Update last login
+    clinic.lastLogin = new Date();
+    await clinic.save();
+    
+    // Generate JWT token (we'll need to add this method to the clinic model)
+    const token = await clinic.getJWTToken();
+    
+    // Return both token and clinic data (without password)
+    const clinicData = {
+      id: clinic._id,
+      name: clinic.name,
+      email: clinic.email,
+      phone: clinic.phone,
+      address: clinic.address,
+      services: clinic.services,
+      authSetup: clinic.authSetup,
+      isApproved: clinic.isApproved,
+      active: clinic.active,
+      createdAt: clinic.createdAt,
+      updatedAt: clinic.updatedAt
+    };
+    
+    return { token, clinic: clinicData };
   }
 }
