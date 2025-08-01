@@ -2,7 +2,6 @@
 import { Clinic, IClinic } from '../models';
 import { GooglePlacesService } from './googlePlaces.service';
 import bcrypt from 'bcryptjs';
-import mongoose from 'mongoose';
 
 interface ClinicFilters {
   search?: string;
@@ -378,7 +377,6 @@ export class ClinicService {
     authData: {
       email: string;
       password: string;
-      adminId: string;
     }
   ): Promise<IClinic> {
     try {
@@ -407,12 +405,11 @@ export class ClinicService {
       // Update clinic with authentication credentials
       clinic.email = authData.email;
       clinic.password = hashedPassword;
+      // Set basic authentication status
       clinic.authSetup = true;
-      clinic.isApproved = true;
       clinic.active = true;
       clinic.isEmailVerified = false; // Will need to verify email later
       clinic.approvedAt = new Date();
-      clinic.approvedBy = new mongoose.Types.ObjectId(authData.adminId);
 
       await clinic.save();
       
@@ -431,7 +428,6 @@ export class ClinicService {
     authData: {
       email?: string;
       password?: string;
-      adminId: string;
     }
   ): Promise<IClinic> {
     try {

@@ -6,19 +6,20 @@ import api from '@/lib/api';
 interface Clinic {
   _id: string;
   name: string;
+  email: string;
   address: string;
   phone: string;
 }
 
-interface AuthSetupModalProps {
+interface EditAuthModalProps {
   clinic: Clinic;
   onClose: () => void;
   onComplete: () => void;
 }
 
-export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalProps) {
+export function EditAuthModal({ clinic, onClose, onComplete }: EditAuthModalProps) {
   const [formData, setFormData] = useState({
-    email: '',
+    email: clinic.email,
     password: '',
     confirmPassword: ''
   });
@@ -29,12 +30,12 @@ export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalPr
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password && formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (formData.password && formData.password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
@@ -42,7 +43,7 @@ export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalPr
     try {
       setLoading(true);
 
-      const response = await api.post(`/api/v1/admin/clinics/${clinic._id}/setup-auth`, {
+      const response = await api.put(`/api/v1/admin/clinics/${clinic._id}/update-auth`, {
         email: formData.email,
         password: formData.password
       });
@@ -50,7 +51,7 @@ export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalPr
       if (response.data.success) {
         onComplete();
       } else {
-        setError(response.data.message || 'Failed to setup authentication');
+        setError(response.data.message || 'Failed to update authentication');
       }
     } catch (error) {
       setError('Network error. Please try again.');
@@ -72,12 +73,11 @@ export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalPr
         <div className="mt-3">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">
-              Setup Authentication
+              Edit Authentication
             </h3>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
-              title="Close modal"
               aria-label="Close modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,35 +116,39 @@ export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalPr
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                New Password (Optional)
               </label>
               <input
                 type="password"
                 id="password"
-                required
                 minLength={6}
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Min 6 characters"
+                placeholder="Leave blank to keep current password"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Leave blank to keep the current password
+              </p>
             </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                required
-                minLength={6}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Confirm password"
-              />
-            </div>
+            {formData.password && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  required={!!formData.password}
+                  minLength={6}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Confirm new password"
+                />
+              </div>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <button
@@ -160,7 +164,7 @@ export function AuthSetupModal({ clinic, onClose, onComplete }: AuthSetupModalPr
                 disabled={loading}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                {loading ? 'Setting up...' : 'Setup Authentication'}
+                {loading ? 'Updating...' : 'Update Authentication'}
               </button>
             </div>
           </form>

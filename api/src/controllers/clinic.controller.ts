@@ -322,7 +322,6 @@ export class ClinicController {
     try {
       const { id } = req.params;
       const { email, password } = req.body;
-      const adminId = (req as any).adminId || 'temp-admin-id'; // From admin auth middleware
       
       if (!email) {
         res.status(400).json({
@@ -342,8 +341,7 @@ export class ClinicController {
       
       const clinic = await ClinicService.setupClinicAuthentication(id, {
         email,
-        password,
-        adminId
+        password
       });
       
       res.json({
@@ -374,12 +372,9 @@ export class ClinicController {
     try {
       const { id } = req.params;
       const { email, password } = req.body;
-      const adminId = (req as any).adminId || 'temp-admin-id';
-      
       const clinic = await ClinicService.updateClinicAuth(id, {
         email,
-        password,
-        adminId
+        password
       });
       
       res.json({
