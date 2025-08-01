@@ -78,7 +78,7 @@ export class AppointmentController {
   ) {
     try {
       const { clinicId, requestedDate, requestedTime, duration, type, reason } = req.body;
-      const patientId = req.user?.id; // From auth middleware
+      const patientId = (req as any).patientId; // From auth middleware
       
       const appointmentRequest = await AppointmentService.createAppointmentRequest({
         patient: patientId,
@@ -112,7 +112,7 @@ export class AppointmentController {
     try {
       const appointmentId = req.params.id;
       const { responseType, proposedDate, proposedTime, proposedDuration, message } = req.body;
-      const clinicId = req.user?.id; // From clinic auth middleware
+      const clinicId = (req as any).clinicId; // From clinic auth middleware
       
       const updatedAppointment = await AppointmentService.clinicResponse(
         appointmentId,
@@ -148,7 +148,6 @@ export class AppointmentController {
     try {
       const appointmentId = req.params.id;
       const { responseType, message } = req.body;
-      const patientId = req.user?.id; // From auth middleware
       
       const updatedAppointment = await AppointmentService.patientResponse(
         appointmentId,
@@ -180,7 +179,7 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
-      const patientId = req.user?.id;
+      const patientId = (req as any).patientId;
       const appointments = await AppointmentService.getPatientRequests(patientId);
       
       res.status(200).json({
@@ -199,7 +198,7 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
-      const clinicId = req.user?.id;
+      const clinicId = (req as any).clinicId;
       const appointments = await AppointmentService.getClinicRequests(clinicId);
       
       res.status(200).json({

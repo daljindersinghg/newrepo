@@ -1,7 +1,4 @@
-import { Notification } from '../models/Notification';
-import { IAppointment } from '../models/Appointment';
-import { Patient } from '../models/Patient';
-import { Clinic } from '../models/Clinic';
+import { Notification, IAppointment, Patient, Clinic } from '../models';
 import logger from '../config/logger.config';
 
 export class NotificationService {
