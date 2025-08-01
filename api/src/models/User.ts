@@ -167,9 +167,5 @@ UserSchema.methods.getFullName = function(): string {
   return `${this.firstName} ${this.lastName}`;
 };
 
-// Static method to find active users
-UserSchema.statics.findActive = function() {
-  return this.find({ isActive: true });
-};
 
 export default mongoose.model<IUser>('User', UserSchema);

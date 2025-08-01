@@ -182,20 +182,40 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
   return (
     <div>
       {/* Progress indicator */}
-      <div className="flex justify-center mb-6">
-        <div className="flex space-x-2">
-          <div className={`w-3 h-3 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-          <div className={`w-3 h-3 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+      <div className="flex justify-center mb-8">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+              step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+            }`}>
+              1
+            </div>
+            <span className="ml-2 text-sm font-medium text-gray-600">Email</span>
+          </div>
+          <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+          <div className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+              step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+            }`}>
+              2
+            </div>
+            <span className="ml-2 text-sm font-medium text-gray-600">Details</span>
+          </div>
         </div>
       </div>
 
       <form onSubmit={step === 2 ? handleSubmit : (e) => e.preventDefault()}>
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Enter your email</h3>
+              <p className="text-sm text-gray-600">We'll send you a verification code to get started</p>
+            </div>
+            
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address *
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-3">
+                Email Address
               </label>
               <input
                 id="email"
@@ -205,19 +225,29 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 required
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your email"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="Enter your email address"
               />
-              <p className="mt-1 text-xs text-gray-500">We'll send you a verification code</p>
+              <div className="mt-2 flex items-center text-xs text-gray-500">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Your email is secure and never shared
+              </div>
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-5">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Complete your profile</h3>
+              <p className="text-sm text-gray-600">Just a few more details to get you started</p>
+            </div>
+
             {/* Email (read-only) */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                 Email Address
               </label>
               <input
@@ -226,21 +256,21 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 type="email"
                 readOnly
                 value={formData.email}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed text-gray-600"
               />
             </div>
 
             {/* OTP */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
-                  Verification Code *
+              <div className="flex justify-between items-center mb-3">
+                <label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
+                  Verification Code
                 </label>
                 <button
                   type="button"
                   onClick={handleResendOTP}
                   disabled={isLoading}
-                  className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50"
+                  className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50 font-medium"
                 >
                   Resend Code
                 </button>
@@ -252,51 +282,57 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 required
                 value={formData.otp}
                 onChange={(e) => handleInputChange('otp', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter 6-digit code"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-center text-lg font-mono tracking-wider"
+                placeholder="000000"
                 maxLength={6}
               />
-              <p className="mt-1 text-xs text-gray-500">Check your email for the verification code</p>
+              <p className="mt-2 text-xs text-gray-500 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Check your email for the 6-digit code
+              </p>
             </div>
 
-            {/* Name */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name *
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your full name"
-              />
-            </div>
+            {/* Name and Phone Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="John Doe"
+                />
+              </div>
 
-            {/* Phone */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number *
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your phone number"
-              />
+              <div>
+                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
             </div>
 
             {/* Date of Birth */}
             <div>
-              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
-                Date of Birth *
+              <label htmlFor="dateOfBirth" className="block text-sm font-semibold text-gray-700 mb-2">
+                Date of Birth
               </label>
               <input
                 id="dateOfBirth"
@@ -305,14 +341,14 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 required
                 value={formData.dateOfBirth}
                 onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               />
             </div>
 
             {/* Insurance Provider (Optional) */}
             <div>
-              <label htmlFor="insuranceProvider" className="block text-sm font-medium text-gray-700 mb-2">
-                Insurance Provider (Optional)
+              <label htmlFor="insuranceProvider" className="block text-sm font-semibold text-gray-700 mb-2">
+                Insurance Provider <span className="text-gray-400 font-normal">(Optional)</span>
               </label>
               <input
                 id="insuranceProvider"
@@ -320,8 +356,8 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                 type="text"
                 value={formData.insuranceProvider}
                 onChange={(e) => handleInputChange('insuranceProvider', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your insurance provider"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="Blue Cross, Aetna, etc."
               />
             </div>
           </div>
@@ -329,19 +365,22 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm mt-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mt-6 flex items-start">
+            <svg className="w-4 h-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             {error}
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className={`mt-6 ${step === 2 ? "flex space-x-4" : ""}`}>
+        <div className={`mt-8 ${step === 2 ? "flex space-x-3" : ""}`}>
           {step === 2 && (
             <Button
               type="button"
               onClick={handleBack}
               variant="outline"
-              className="flex-1"
+              className="flex-1 py-3 rounded-xl border-gray-300 hover:bg-gray-50"
             >
               Back
             </Button>
@@ -351,7 +390,7 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
             type={step === 1 ? "button" : "submit"}
             onClick={step === 1 ? handleSendOTP : undefined}
             disabled={step === 1 ? (!isStep1Valid || isLoading) : (!isStep2Valid || isLoading)}
-            className={`${step === 2 ? 'flex-1' : 'w-full'} bg-blue-600 hover:bg-blue-700`}
+            className={`${step === 2 ? 'flex-1' : 'w-full'} bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 py-3 rounded-xl text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -359,23 +398,33 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {step === 1 ? 'Sending code...' : 'Creating account...'}
+                {step === 1 ? 'Sending Code...' : 'Creating Account...'}
               </div>
             ) : step === 1 ? (
-              'Send Verification Code'
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Send Verification Code
+              </>
             ) : (
-              'Create Account'
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Create Account
+              </>
             )}
           </Button>
         </div>
 
         {/* Switch to Login */}
-        <p className="text-center text-sm text-gray-600 mt-4">
+        <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
-            className="text-blue-600 hover:text-blue-500 font-medium"
+            className="text-blue-600 hover:text-blue-500 font-semibold transition-colors"
           >
             Sign in here
           </button>
