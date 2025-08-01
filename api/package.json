@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "start": "node --max-old-space-size=1024 dist/server.js",
+    "start:dev": "ts-node --max-old-space-size=1024 src/server.ts",
     "dev2": "nodemon --exec 'node --no-cache -r ts-node/register src/server.ts'",
     "dev": "nodemon src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "postbuild": "echo 'Build completed successfully'"
   },
   "keywords": [],
   "author": "",
