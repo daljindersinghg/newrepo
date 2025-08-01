@@ -1,4 +1,3 @@
-// src/components/landing/EnhancedSearchHero.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,320 +9,194 @@ interface PlaceResult {
   place_id: string;
   formatted_address: string;
   geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
+    location: { lat: number; lng: number; };
   };
   name: string;
   types: string[];
 }
 
 export function EnhancedSearchHero() {
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState<PlaceResult | null>(null);
   const { track } = useSimpleTracking();
   const { addSearch, getLastSearch, hasSearchHistory, getRecentSearches } = useSearchHistory();
-  const [showPreviousSearch, setShowPreviousSearch] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
 
   useEffect(() => {
-    // Check if there's a previous search on mount
-    const lastSearch = getLastSearch();
-    if (lastSearch && hasSearchHistory()) {
-      setShowPreviousSearch(true);
+    const last = getLastSearch();
+    if (last && hasSearchHistory()) {
+      setShowPrevious(true);
     }
-  }, []);
+  }, [getLastSearch, hasSearchHistory]);
 
-  const handleLocationSelect = (place) => {
+  const handleLocationSelect = (place: PlaceResult) => {
     setSelectedLocation(place);
     track('address_selected');
-    console.log('📍 Address selected:', place.formatted_address);
   };
 
-  const handleSearch = () => {
-    if (selectedLocation) {
-      track('search_dentists_clicked');
-      
-      // Add to search history
-      addSearch({
-        address: selectedLocation.formatted_address,
-        lat: selectedLocation.geometry.location.lat,
-        lng: selectedLocation.geometry.location.lng,
-        place_id: selectedLocation.place_id
-      });
-      
-      // Navigate to results
-      window.location.href = '/results';
-    }
+  const doSearch = () => {
+    if (!selectedLocation) return;
+    track('search_dentists_clicked');
+    addSearch({
+      address: selectedLocation.formatted_address,
+      lat: selectedLocation.geometry.location.lat,
+      lng: selectedLocation.geometry.location.lng,
+      place_id: selectedLocation.place_id,
+    });
+    window.location.href = '/results';
   };
 
-  const handleReturnToPreviousSearch = () => {
-    const lastSearch = getLastSearch();
-    if (lastSearch) {
-      track('return_to_previous_search_clicked');
-      
-      // Set current search location for results page
-      localStorage.setItem('searchLocation', JSON.stringify({
-        address: lastSearch.address,
-        lat: lastSearch.lat,
-        lng: lastSearch.lng
-      }));
-      
-      window.location.href = '/results';
-    }
+  const resumePrevious = () => {
+    const last = getLastSearch();
+    if (!last) return;
+    track('return_to_previous_search_clicked');
+    localStorage.setItem('searchLocation', JSON.stringify({
+      address: last.address,
+      lat: last.lat,
+      lng: last.lng,
+    }));
+    window.location.href = '/results';
   };
 
-  const recentSearches = getRecentSearches(3);
+  const recent = getRecentSearches(3);
+
   return (
-    <section className="relative min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center">
-      {/* Background Pattern */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fillRule='evenodd'%3E%3Cg fill='%23e0e7ff' fillOpacity='0.4'%3E%3Ccircle cx='30' cy='30' r='1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")"
-        }}
-      ></div>
+    <section className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+      {/* Hero Text */}
+      <div className="max-w-xl mx-auto text-center space-y-4">
+        <span className="inline-block px-4 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium animate-pulse">
+          Find Dentists Near You
+        </span>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
+          Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">Perfect Dentist</span><br/>
+          Is Just a Search Away
+        </h1>
+        <p className="text-gray-600 text-sm sm:text-base">
+          Enter your address to discover verified dentists with instant booking and same-day availability.
+        </p>
+      </div>
 
-      <div className="relative w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-6 py-3 rounded-full text-sm font-medium mb-8">
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-            Find Dentists Near You
-          </div>
-
-          {/* Main Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Find Your
-            <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent">
-              Perfect Dentist
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Enter your address to find verified dentists in your area with instant booking and same-day availability.
-          </p>
-        </div>
-
-        {/* Previous Search Section */}
-        {showPreviousSearch && getLastSearch() && (
-          <div className="max-w-2xl mx-auto mb-8">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-xl">🔄</span>
-                  </div>
-                  <div>
-                    <h3 className="text-blue-800 font-semibold text-lg mb-2">Continue Previous Search</h3>
-                    <p className="text-blue-700 text-base font-medium">
-                      {getLastSearch()?.address}
-                    </p>
-                    <p className="text-blue-600 text-sm mt-1">
-                      Searched on {new Date(getLastSearch()?.searchDate || '').toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowPreviousSearch(false)}
-                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded-full transition-colors"
-                  aria-label="Dismiss previous search"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="mt-4 flex gap-3">
-                <button
-                  onClick={handleReturnToPreviousSearch}
-                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  Continue Search
-                </button>
-                <button
-                  onClick={() => setShowPreviousSearch(false)}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
-                >
-                  New Search
-                </button>
-              </div>
+      {/* Previous Search */}
+      {showPrevious && getLastSearch() && (
+        <div className="mt-6 max-w-md mx-auto bg-white shadow rounded-xl p-4 border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-gray-800 font-semibold">Continue Previous Search</h3>
+              <p className="text-sm text-gray-600 truncate">{getLastSearch()?.address}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {new Date(getLastSearch()!.searchDate).toLocaleDateString()}
+              </p>
             </div>
+            <button
+              onClick={() => setShowPrevious(false)}
+              className="text-gray-400 hover:text-gray-600"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={resumePrevious}
+              className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              Continue
+            </button>
+            <button
+              onClick={() => setShowPrevious(false)}
+              className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+            >
+              New Search
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Search Card */}
+      <div className="mt-8 max-w-lg mx-auto bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+        <label className="flex items-center gap-2 text-gray-700 mb-2">
+          <span className="text-2xl">📍</span>
+          <span className="font-medium">Where are you located?</span>
+        </label>
+
+        <GooglePlacesAutocomplete
+          placeholder="Type address, city, or ZIP"
+          onPlaceSelect={handleLocationSelect}
+          className="w-full h-12 px-4 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+        />
+
+        {/* Recent Searches */}
+        {!selectedLocation && recent.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+              ⏱ Recent Searches
+            </h4>
+            <ul className="space-y-2">
+              {recent.map((s, i) => (
+                <li key={i}>
+                  <button
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg transition"
+                    onClick={() => {
+                      setSelectedLocation({
+                        formatted_address: s.address,
+                        geometry: { location: { lat: s.lat, lng: s.lng } },
+                        place_id: s.place_id || '',
+                        name: s.address,
+                        types: [],
+                      });
+                      track('recent_search_selected');
+                    }}
+                  >
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-800">{s.address}</span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(s.searchDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
-        {/* Search Card */}
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/30 p-8 sm:p-12">
-            
-            {/* Address Input */}
-            <div className="space-y-6">
-              <div className="text-center">
-                <label className="flex items-center justify-center gap-3 text-gray-700 font-semibold text-xl mb-6">
-                  <span className="text-3xl">📍</span>
-                  Where are you located?
-                </label>
-              </div>
-
-              {/* Google Places Input - Removed duplicate icon styling */}
-              <div className="relative">
-                <GooglePlacesAutocomplete
-                  placeholder="Start typing your address, city, or ZIP code..."
-                  onPlaceSelect={handleLocationSelect}
-                  className="text-gray-900 text-lg h-16 px-6 border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-2xl transition-all duration-200 shadow-sm w-full"
-                />
-              </div>
-
-              {/* Helper Text */}
-              <p className="text-center text-gray-500 text-sm">
-                💡 Type any address and we'll show you suggestions
-              </p>
-
-              {/* Recent Searches */}
-              {!selectedLocation && recentSearches.length > 0 && (
-                <div className="mt-6 bg-gray-50 rounded-xl p-4">
-                  <h4 className="text-gray-700 font-medium text-sm mb-3 flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Recent Searches
-                  </h4>
-                  <div className="space-y-2">
-                    {recentSearches.map((search, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setSelectedLocation({
-                            formatted_address: search.address,
-                            geometry: {
-                              location: {
-                                lat: search.lat,
-                                lng: search.lng
-                              }
-                            },
-                            place_id: search.place_id || '',
-                            name: search.address,
-                            types: []
-                          });
-                          track('recent_search_selected');
-                        }}
-                        className="w-full text-left p-3 hover:bg-white hover:shadow-sm rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                            <span className="text-gray-600 text-sm">📍</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-gray-900 font-medium text-sm truncate">{search.address}</p>
-                            <p className="text-gray-500 text-xs">
-                              {new Date(search.searchDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {/* Selected Location Confirmation */}
+        {selectedLocation && (
+          <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200 flex items-start justify-between">
+            <div>
+              <h3 className="text-green-800 font-semibold">Location Confirmed</h3>
+              <p className="text-sm text-green-700">{selectedLocation.formatted_address}</p>
             </div>
-
-            {/* Selected Location Display */}
-            {selectedLocation && (
-              <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-green-600 text-2xl">✓</span>
-                    </div>
-                    <div>
-                      <h3 className="text-green-800 font-semibold text-lg mb-2">Perfect! Location confirmed</h3>
-                      <p className="text-green-700 text-base font-medium">
-                        {selectedLocation.formatted_address}
-                      </p>
-                      <p className="text-green-600 text-sm mt-2 font-mono bg-green-100 px-2 py-1 rounded inline-block">
-                        {selectedLocation.geometry.location.lat.toFixed(4)}, {selectedLocation.geometry.location.lng.toFixed(4)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedLocation(null)}
-                    className="text-green-600 hover:text-green-800 hover:bg-green-100 p-2 rounded-full transition-colors"
-                    aria-label="Clear location"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Search Button */}
-            <div className="mt-8">
-              <button
-                onClick={handleSearch}
-                disabled={!selectedLocation}
-                className="w-full h-16 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-bold text-xl rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
-              >
-                {selectedLocation ? (
-                  <>
-                    <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    Find Dentists Near This Location
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    </svg>
-                    Please select an address first
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Trust Indicators */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 pt-6 border-t border-gray-200 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <span className="text-green-500 text-lg">✓</span>
-                <span>Verified dentists</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-blue-500 text-lg">✓</span>
-                <span>Instant booking</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-purple-500 text-lg">✓</span>
-                <span>Same-day appointments</span>
-              </div>
-            </div>
+            <button
+              onClick={() => setSelectedLocation(null)}
+              className="text-green-600 hover:text-green-800"
+            >
+              ×
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* Quick Stats */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-8 bg-white/70 backdrop-blur rounded-2xl px-8 py-4 shadow-lg">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">50K+</div>
-              <div className="text-sm text-gray-600">Happy patients</div>
-            </div>
-            <div className="w-px h-12 bg-gray-300"></div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">2,500+</div>
-              <div className="text-sm text-gray-600">Partner dentists</div>
-            </div>
-            <div className="w-px h-12 bg-gray-300"></div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">4.9★</div>
-              <div className="text-sm text-gray-600">Average rating</div>
-            </div>
+        <button
+          onClick={doSearch}
+          disabled={!selectedLocation}
+          className={`mt-6 w-full py-3 font-semibold rounded-lg transition ${
+            selectedLocation
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {selectedLocation ? 'Search Dentists' : 'Select an Address First'}
+        </button>
+      </div>
+
+      {/* Trust Indicators */}
+      <div className="mt-12 flex flex-wrap justify-center gap-6 text-gray-600 text-sm">
+        {['Verified dentists', 'Instant booking', 'Same-day appointments'].map((item) => (
+          <div key={item} className="flex items-center gap-1">
+            <span className="text-green-500">✓</span>
+            <span>{item}</span>
           </div>
-        </div>
+        ))}
       </div>
     </section>
-  );
+);
 }

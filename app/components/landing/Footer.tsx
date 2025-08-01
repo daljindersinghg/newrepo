@@ -38,7 +38,7 @@ export function Footer() {
             <h3 className="font-semibold text-lg mb-4">For Dentists</h3>
             <ul className="space-y-2">
               <li><a href="/dentist-signup" className="text-gray-300 hover:text-white">Join Platform</a></li>
-              <li><a href="/dentist-login" className="text-gray-300 hover:text-white">Dentist Login</a></li>
+              <li><a href="/clinic/dashboard" className="text-gray-300 hover:text-white">Dentist Login</a></li>
               <li><a href="/practice-tools" className="text-gray-300 hover:text-white">Practice Tools</a></li>
             </ul>
           </div>

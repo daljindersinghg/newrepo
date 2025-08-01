@@ -21,8 +21,8 @@ export default function HomePage() {
       <Header />
       <EnhancedSearchHero />
       <HowItWorks />
-      <Features />
-      <TrustSection />
+      {/* <Features /> */}
+      {/* <TrustSection /> */}
       <CTASection />
       <Footer />
       
