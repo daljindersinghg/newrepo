@@ -12,7 +12,11 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Add any auth tokens here if needed
+    // Add admin token if available
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+      config.headers.Authorization = `Bearer ${adminToken}`;
+    }
     return config;
   },
   (error) => {
@@ -28,8 +32,14 @@ api.interceptors.response.use(
   (error) => {
     // Handle common errors
     if (error.response?.status === 401) {
-      // Handle unauthorized
-      console.error('Unauthorized access');
+      // Handle unauthorized - clear admin auth
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminData');
+      
+      // Only redirect if we're on an admin page
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+        window.location.reload();
+      }
     }
     return Promise.reject(error);
   }

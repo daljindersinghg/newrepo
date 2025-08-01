@@ -46,6 +46,17 @@ export class AdminService {
       throw new Error("wrong password of admin");
     }
     const token = await admin.getJWTToken();
-    return token;
+    
+    // Return both token and admin data (without password)
+    const adminData = {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      roles: admin.roles,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt
+    };
+    
+    return { token, admin: adminData };
   }
 }

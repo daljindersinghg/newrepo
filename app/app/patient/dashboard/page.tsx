@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { useAuth } from '@/providers/AuthProvider';
 import { appointmentApi, Appointment } from '@/lib/api/appointments';
@@ -18,7 +19,12 @@ export default function PatientDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const result = await appointmentApi.getMyRequests();
+      
+      if (!patientInfo?._id) {
+        throw new Error('Patient ID not found');
+      }
+      
+      const result = await appointmentApi.getMyRequests(patientInfo._id);
       
       if (result.success) {
         setAppointments(result.appointments);
@@ -91,18 +97,18 @@ export default function PatientDashboard() {
               <p className="text-gray-600 mt-1">Welcome back, {patientInfo?.name}</p>
             </div>
             <div className="flex gap-3">
-              <a
+              <Link
                 href="/"
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Find Clinics
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/patient/appointments"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 All Appointments
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -214,12 +220,12 @@ export default function PatientDashboard() {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Appointments Yet</h3>
                     <p className="text-gray-600 mb-4">Start by finding and booking with a dental clinic</p>
-                    <a
+                    <Link
                       href="/"
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-block"
                     >
                       Find Clinics
-                    </a>
+                    </Link>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-200">
@@ -271,18 +277,18 @@ export default function PatientDashboard() {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                 <div className="space-y-3">
-                  <a
+                  <Link
                     href="/"
                     className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Book New Appointment
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/patient/appointments"
                     className="block w-full bg-gray-200 text-gray-700 text-center py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                   >
                     View All Appointments
-                  </a>
+                  </Link>
                 </div>
               </div>
 

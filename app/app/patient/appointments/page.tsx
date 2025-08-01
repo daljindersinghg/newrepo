@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { useAuth } from '@/providers/AuthProvider';
 import { appointmentApi, Appointment } from '@/lib/api/appointments';
@@ -99,18 +100,18 @@ export default function PatientAppointments() {
               <p className="text-gray-600 mt-1">Track and manage your appointment requests</p>
             </div>
             <div className="flex gap-3">
-              <a
+              <Link
                 href="/patient/dashboard"
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 ← Back
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Book New Appointment
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -201,12 +202,12 @@ export default function PatientAppointments() {
                 : `You don't have any ${filterStatus === 'counter-offered' ? 'appointments needing your response' : filterStatus + ' appointments'} at the moment.`
               }
             </p>
-            <a
+            <Link
               href="/"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium inline-block"
             >
               Find a Clinic
-            </a>
+            </Link>
           </div>
         )}
 
