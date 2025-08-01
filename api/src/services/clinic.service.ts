@@ -1,6 +1,8 @@
 // api/src/services/clinic.service.ts (Fixed version)
 import { Clinic, IClinic } from '../models';
 import { GooglePlacesService } from './googlePlaces.service';
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 
 interface ClinicFilters {
   search?: string;
@@ -14,11 +16,12 @@ interface ClinicFilters {
   radius?: number;
   verified?: boolean;
   active?: boolean;
+  authStatus?: string; // 'pending', 'setup', or undefined for all
 }
 
 interface CreateClinicFromGoogleData {
   placeId: string;
-  email: string;
+  email?: string; // ✅ Make email optional
   acceptedInsurance?: string[];
 }
 
@@ -26,7 +29,7 @@ export class ClinicService {
   private static googlePlacesService = new GooglePlacesService();
 
   /**
-   * Create clinic with Google Places auto-population
+   * Create clinic with Google Places auto-population (Phase 1)
    */
   static async createClinicFromGooglePlace(
     { placeId, email, acceptedInsurance = [] }: CreateClinicFromGoogleData
@@ -47,18 +50,24 @@ export class ClinicService {
         throw new Error('Clinic with this Google Place ID already exists');
       }
 
-      // Check if clinic already exists by email
-      //@ts-ignore
-      const existingEmailClinic = await Clinic.findOne({ email });
-      if (existingEmailClinic) {
-        throw new Error('Clinic with this email already exists');
-      }
+      // Check if clinic already exists by email (only if email provided)
+      // if (email) {
+      //   const existingEmailClinic = await Clinic.findOne({ email });
+      //   if (existingEmailClinic) {
+      //     throw new Error('Clinic with this email already exists');
+      //   }
+      // }
 
       // Merge Google data with manual data
       const clinicData = {
         ...googleData,
-        email, // Override with provided email
+        ...(email && { email }), // Only add email if provided
         acceptedInsurance, // Override with provided insurance
+        // Phase 1 defaults (no authentication)
+        authSetup: false,
+        isApproved: false,
+        active: false,
+        isEmailVerified: false,
         // Set verification date if auto-verified
         verificationDate: googleData.isVerified ? new Date() : undefined,
         // Add sync tracking
@@ -258,9 +267,21 @@ export class ClinicService {
       if (filters.active !== undefined) {
         query.active = filters.active;
       } else {
-        // Default to show only active clinics
-        query.active = true;
+        // Default to show only active clinics (unless filtering by auth status)
+        if (!filters.authStatus) {
+          query.active = true;
+        }
       }
+
+      // Handle authentication status filtering
+      if (filters.authStatus === 'pending') {
+        // Clinics without authentication setup
+        query.authSetup = { $ne: true };
+      } else if (filters.authStatus === 'setup') {
+        // Clinics with authentication setup
+        query.authSetup = true;
+      }
+      // If authStatus is undefined, return all clinics
 
       if (filters.services && filters.services.length > 0) {
         query.services = { $in: filters.services };
@@ -342,6 +363,110 @@ export class ClinicService {
       }
       
       return false;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  // ============ PHASE 2: ADMIN AUTHENTICATION SETUP ============
+
+  /**
+   * Admin sets up authentication for a clinic (Phase 2)
+   */
+  static async setupClinicAuthentication(
+    clinicId: string, 
+    authData: {
+      email: string;
+      password: string;
+      adminId: string;
+    }
+  ): Promise<IClinic> {
+    try {
+      const clinic = await Clinic.findById(clinicId);
+      if (!clinic) {
+        throw new Error('Clinic not found');
+      }
+
+      if (clinic.authSetup) {
+        throw new Error('Clinic authentication is already set up');
+      }
+
+      // Check if email is already used by another clinic
+      const existingEmailClinic = await Clinic.findOne({ 
+        email: authData.email,
+        _id: { $ne: clinicId } // Exclude current clinic
+      });
+      if (existingEmailClinic) {
+        throw new Error('Email is already used by another clinic');
+      }
+
+      // Hash password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(authData.password, saltRounds);
+
+      // Update clinic with authentication credentials
+      clinic.email = authData.email;
+      clinic.password = hashedPassword;
+      clinic.authSetup = true;
+      clinic.isApproved = true;
+      clinic.active = true;
+      clinic.isEmailVerified = false; // Will need to verify email later
+      clinic.approvedAt = new Date();
+      clinic.approvedBy = new mongoose.Types.ObjectId(authData.adminId);
+
+      await clinic.save();
+      
+      // Return clinic without password
+      return await Clinic.findById(clinicId).select('-password');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  /**
+   * Update clinic authentication credentials (admin can change email/password)
+   */
+  static async updateClinicAuth(
+    clinicId: string,
+    authData: {
+      email?: string;
+      password?: string;
+      adminId: string;
+    }
+  ): Promise<IClinic> {
+    try {
+      const clinic = await Clinic.findById(clinicId);
+      if (!clinic) {
+        throw new Error('Clinic not found');
+      }
+
+      if (!clinic.authSetup) {
+        throw new Error('Clinic authentication is not set up yet');
+      }
+
+      // Check email uniqueness if email is being updated
+      if (authData.email && authData.email !== clinic.email) {
+        const existingEmailClinic = await Clinic.findOne({ 
+          email: authData.email,
+          _id: { $ne: clinicId }
+        });
+        if (existingEmailClinic) {
+          throw new Error('Email is already used by another clinic');
+        }
+        clinic.email = authData.email;
+        clinic.isEmailVerified = false; // Reset verification if email changed
+      }
+
+      // Update password if provided
+      if (authData.password) {
+        const saltRounds = 12;
+        clinic.password = await bcrypt.hash(authData.password, saltRounds);
+      }
+
+      await clinic.save();
+      
+      // Return clinic without password
+      return await Clinic.findById(clinicId).select('-password');
     } catch (error: any) {
       throw error;
     }

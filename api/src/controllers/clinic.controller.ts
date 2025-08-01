@@ -21,18 +21,11 @@ export class ClinicController {
         return;
       }
 
-      if (!email) {
-        res.status(400).json({
-          success: false,
-          message: 'Email address is required'
-        });
-        return;
-      }
-
+      // Email is optional in Phase 1
       // Create clinic with minimal manual input
-   const clinic = await ClinicService.createClinicFromGooglePlace({
+      const clinic = await ClinicService.createClinicFromGooglePlace({
         placeId,
-        email,
+        email, // Optional
         acceptedInsurance: acceptedInsurance || []
       });
       
@@ -217,14 +210,13 @@ export class ClinicController {
 
  static async getClinics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-  
-  
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
       const active = req.query.active ? req.query.active === 'true' : undefined;
+      const authStatus = req.query.authStatus as string; // 'pending', 'setup', or undefined for all
 
-      const filters = { search, active };
+      const filters = { search, active, authStatus };
       const result = await ClinicService.getClinics(page, limit, filters);
 
       res.json({
@@ -317,6 +309,90 @@ export class ClinicController {
       });
     } catch (error) {
       logger.error('Error toggling clinic active status:', error);
+      next(error);
+    }
+  }
+
+  // ============ PHASE 2: ADMIN AUTHENTICATION SETUP ============
+
+  /**
+   * Admin sets up authentication for a clinic (Phase 2)
+   */
+  static async setupClinicAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { email, password } = req.body;
+      const adminId = (req as any).adminId || 'temp-admin-id'; // From admin auth middleware
+      
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email is required'
+        });
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters'
+        });
+        return;
+      }
+      
+      const clinic = await ClinicService.setupClinicAuthentication(id, {
+        email,
+        password,
+        adminId
+      });
+      
+      res.json({
+        success: true,
+        message: 'Clinic authentication setup successfully',
+        data: {
+          id: clinic._id,
+          name: clinic.name,
+          email: clinic.email,
+          authSetup: clinic.authSetup,
+          isApproved: clinic.isApproved,
+          active: clinic.active
+        }
+      });
+    } catch (error: any) {
+      logger.error('Error setting up clinic auth:', error);
+      next(error);
+    }
+  }
+  
+  /**
+   * Get clinics pending auth setup
+   */
+  /**
+   * Update clinic authentication credentials
+   */
+  static async updateClinicAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { email, password } = req.body;
+      const adminId = (req as any).adminId || 'temp-admin-id';
+      
+      const clinic = await ClinicService.updateClinicAuth(id, {
+        email,
+        password,
+        adminId
+      });
+      
+      res.json({
+        success: true,
+        message: 'Clinic authentication updated successfully',
+        data: {
+          id: clinic._id,
+          name: clinic.name,
+          email: clinic.email
+        }
+      });
+    } catch (error: any) {
+      logger.error('Error updating clinic auth:', error);
       next(error);
     }
   }

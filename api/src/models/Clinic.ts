@@ -50,8 +50,8 @@ export interface IClinic extends Document {
   };
   
   // Authentication fields (NEW)
-  password: string;
-  isEmailVerified: boolean;
+  password?: string; // Make optional since it's added later
+  isEmailVerified?: boolean;
   emailVerificationToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
@@ -60,8 +60,11 @@ export interface IClinic extends Document {
   // Active status for clinic
   active?: boolean;
   
+  // Auth setup tracking (NEW)
+  authSetup?: boolean;
+  
   // Admin approval fields (NEW)
-  isApproved: boolean;
+  isApproved?: boolean;
   approvedAt?: Date;
   approvedBy?: mongoose.Types.ObjectId; // ref: Admin
   
@@ -110,18 +113,19 @@ const ClinicSchema: Schema = new Schema({
   },
   email: { 
     type: String, 
-    required: [true, 'Email is required'],
+    required: false, // ✅ Make optional for Phase 1 (Google Places creation)
     unique: true,
+    sparse: true, // ✅ Allow unique constraint with null values
     lowercase: true,
     trim: true
   },
   
-  // Authentication fields (NEW)
+  // Authentication fields (OPTIONAL - for future implementation)
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: false, // Make optional for now
     minlength: [6, 'Password must be at least 6 characters'],
-    select: false // Don't include password in queries by default
+    select: false
   },
   isEmailVerified: {
     type: Boolean,
@@ -178,6 +182,13 @@ const ClinicSchema: Schema = new Schema({
     type: Boolean,
     default: false,
     index: true // For efficient filtering
+  },
+  
+  // Auth setup tracking (NEW)
+  authSetup: {
+    type: Boolean,
+    default: false, // True when admin sets up email/password
+    index: true
   },
   
   // Admin approval fields (NEW)
@@ -284,4 +295,5 @@ ClinicSchema.methods.comparePassword = async function(candidatePassword: string)
   return bcrypt.compare(candidatePassword, this.password as string);
 };
 
-export default mongoose.model<IClinic>('Clinic', ClinicSchema);
+export const Clinic = mongoose.model<IClinic>('Clinic', ClinicSchema);
+export default Clinic;

@@ -22,11 +22,14 @@ adminRouter.get("/google-places/search", ClinicController.searchGooglePlaces);
 adminRouter.post("/clinics/bulk-sync", ClinicController.bulkSyncClinics);
 
 // Clinic routes with parameters
-// adminRouter.get("/clinics/:id", ClinicController.getClinic);
 adminRouter.put("/clinics/:id", ClinicController.updateClinic);
 adminRouter.put("/clinics/:id/toggle-active", ClinicController.toggleClinicActiveStatus);
 adminRouter.delete("/clinics/:id", ClinicController.deleteClinic);
 adminRouter.post("/clinics/:id/sync-google", ClinicController.syncClinicWithGoogle);
+
+// Phase 2: Setup authentication for specific clinic
+adminRouter.post("/clinics/:id/setup-auth", ClinicController.setupClinicAuth);
+adminRouter.put("/clinics/:id/update-auth", ClinicController.updateClinicAuth);
 
 // ============ PARAMETERIZED ROUTES LAST ============
 // These MUST come AFTER all specific routes

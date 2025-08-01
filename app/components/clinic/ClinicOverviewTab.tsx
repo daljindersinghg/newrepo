@@ -114,7 +114,7 @@ export function ClinicOverviewTab() {
             Review Pending ({stats.pending})
           </button>
           
-          <button
+          {/* <button
             type="button"
             className="flex items-center justify-center p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -122,7 +122,7 @@ export function ClinicOverviewTab() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v8a3 3 0 01-3 3H6a3 3 0 01-3-3V8a1 1 0 011-1h3z" />
             </svg>
             View Calendar
-          </button>
+          </button> */}
           
           <button
             type="button"

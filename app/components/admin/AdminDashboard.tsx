@@ -4,11 +4,10 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { CreateClinicForm } from './CreateClinicForm';
-
 import { ViewClinics } from './ViewClinics';
+import { ClinicAuthManagement } from './ClinicAuthManagement';
 
-
-type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors';
+type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('add-clinic');
@@ -26,6 +25,11 @@ export function AdminDashboard() {
       label: 'View Clinics',
       icon: '🏢'
     },
+    {
+      id: 'clinic-auth' as TabType,
+      label: 'Clinic Authentication',
+      icon: '🔐'
+    },
 
   ];
 
@@ -36,7 +40,8 @@ export function AdminDashboard() {
    
       case 'view-clinics':
         return <ViewClinics />;
-  
+      case 'clinic-auth':
+        return <ClinicAuthManagement />;
       default:
         return <CreateClinicForm />;
     }
@@ -65,6 +70,8 @@ export function AdminDashboard() {
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-white hover:bg-blue-700 p-1 rounded"
+            title="Close sidebar"
+            aria-label="Close sidebar"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -117,6 +124,8 @@ export function AdminDashboard() {
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
+                title="Open sidebar"
+                aria-label="Open sidebar"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
