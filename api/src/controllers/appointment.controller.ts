@@ -181,6 +181,16 @@ export class AppointmentController {
   ) {
     try {
       const patientId = req.params.patientId; // Get from URL parameter
+      
+      // Validate ObjectId format
+      if (!patientId || !patientId.match(/^[0-9a-fA-F]{24}$/)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid patient ID format'
+        });
+        return;
+      }
+      
       const appointments = await AppointmentService.getPatientRequests(patientId);
       
       res.status(200).json({
@@ -199,7 +209,18 @@ export class AppointmentController {
     next: NextFunction
   ) {
     try {
+      console.log("Fetching clinic requests");
       const clinicId = req.params.clinicId; // Get from URL parameter
+      
+      // Validate ObjectId format
+      if (!clinicId || !clinicId.match(/^[0-9a-fA-F]{24}$/)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid clinic ID format'
+        });
+        return;
+      }
+      
       const appointments = await AppointmentService.getClinicRequests(clinicId);
       
       res.status(200).json({

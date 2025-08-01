@@ -12,11 +12,19 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Add admin token if available
+    // Add admin token if available and requesting admin routes
     const adminToken = localStorage.getItem('adminToken');
-    if (adminToken) {
+    const clinicToken = localStorage.getItem('clinicToken');
+    
+    // Check if this is a clinic API call
+    if (config.url?.includes('/clinic/') && clinicToken) {
+      config.headers.Authorization = `Bearer ${clinicToken}`;
+    }
+    // Otherwise use admin token if available
+    else if (adminToken) {
       config.headers.Authorization = `Bearer ${adminToken}`;
     }
+    
     return config;
   },
   (error) => {
@@ -32,13 +40,27 @@ api.interceptors.response.use(
   (error) => {
     // Handle common errors
     if (error.response?.status === 401) {
-      // Handle unauthorized - clear admin auth
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminData');
+      const requestUrl = error.config?.url || '';
       
-      // Only redirect if we're on an admin page
-      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
-        window.location.reload();
+      // Handle clinic unauthorized
+      if (requestUrl.includes('/clinic/')) {
+        localStorage.removeItem('clinicToken');
+        localStorage.removeItem('clinicData');
+        
+        // Only redirect if we're on a clinic page
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/clinic')) {
+          window.location.reload();
+        }
+      }
+      // Handle admin unauthorized
+      else {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminData');
+        
+        // Only redirect if we're on an admin page
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+          window.location.reload();
+        }
       }
     }
     return Promise.reject(error);
