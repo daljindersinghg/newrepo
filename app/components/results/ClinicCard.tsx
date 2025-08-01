@@ -254,6 +254,7 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
             <BookingFlow 
               clinicId={clinic._id} 
               clinicName={clinic.name}
+              onClose={() => setShowBookingModal(false)}
             />
           </div>
         </div>

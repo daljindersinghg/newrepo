@@ -161,43 +161,6 @@ export class AppointmentService {
     }
   }
 
-  /**
-   * Cancel an appointment
-   */
-  static async cancelAppointment(
-    appointmentId: string,
-    reason: string,
-    cancelledBy: 'patient' | 'clinic' | 'admin' = 'patient'
-  ): Promise<IAppointment> {
-    try {
-      const appointment = await Appointment.findById(appointmentId);
-      if (!appointment) {
-        throw new Error('Appointment not found');
-      }
-
-      if (appointment.status === 'completed') {
-        throw new Error('Cannot cancel completed appointments');
-      }
-
-      if (appointment.status === 'cancelled') {
-        throw new Error('Appointment is already cancelled');
-      }
-
-      // Update appointment status
-      appointment.status = 'cancelled';
-      appointment.notes = `${appointment.notes || ''}\nCancelled by ${cancelledBy}: ${reason}`.trim();
-
-      await appointment.save();
-
-      logger.info(`Appointment ${appointmentId} cancelled by ${cancelledBy}: ${reason}`);
-
-      return appointment;
-
-    } catch (error: any) {
-      logger.error('Error cancelling appointment:', error);
-      throw error;
-    }
-  }
 
   /**
    * Update appointment status
@@ -332,6 +295,228 @@ export class AppointmentService {
 
     } catch (error: any) {
       logger.error('Error fetching upcoming appointments:', error);
+      throw error;
+    }
+  }
+
+  // New workflow methods
+  
+  /**
+   * Create appointment request (new workflow)
+   */
+  static async createAppointmentRequest(requestData: {
+    patient: string;
+    clinic: string;
+    requestedDate: Date;
+    requestedTime: string;
+    duration: number;
+    type: string;
+    reason: string;
+  }): Promise<IAppointment> {
+    try {
+      const appointment = new Appointment({
+        patient: requestData.patient,
+        clinic: requestData.clinic,
+        appointmentDate: requestData.requestedDate,
+        duration: requestData.duration,
+        type: requestData.type,
+        status: 'pending',
+        originalRequest: {
+          requestedDate: requestData.requestedDate,
+          requestedTime: requestData.requestedTime,
+          duration: requestData.duration,
+          reason: requestData.reason,
+          requestedAt: new Date()
+        },
+        clinicResponses: [],
+        patientResponses: [],
+        messages: []
+      });
+
+      await appointment.save();
+      await appointment.populate(['patient', 'clinic']);
+      
+      logger.info(`Appointment request created: ${appointment._id}`);
+      return appointment;
+    } catch (error: any) {
+      logger.error('Error creating appointment request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clinic responds to appointment request
+   */
+  static async clinicResponse(
+    appointmentId: string,
+    responseData: {
+      responseType: 'counter-offer' | 'confirmation' | 'rejection';
+      proposedDate?: Date;
+      proposedTime?: string;
+      proposedDuration?: number;
+      message: string;
+      respondedBy: string;
+    }
+  ): Promise<IAppointment> {
+    try {
+      const appointment = await Appointment.findById(appointmentId);
+      if (!appointment) {
+        throw new Error('Appointment not found');
+      }
+
+      // Add clinic response
+      appointment.clinicResponses.push({
+        responseType: responseData.responseType,
+        proposedDate: responseData.proposedDate,
+        proposedTime: responseData.proposedTime,
+        proposedDuration: responseData.proposedDuration,
+        message: responseData.message,
+        respondedAt: new Date(),
+        respondedBy: responseData.respondedBy as any
+      });
+
+      // Update appointment status
+      if (responseData.responseType === 'confirmation') {
+        appointment.status = 'confirmed';
+        appointment.confirmedDetails = {
+          finalDate: appointment.appointmentDate,
+          finalTime: appointment.originalRequest.requestedTime,
+          finalDuration: appointment.duration,
+          confirmedAt: new Date(),
+          confirmedBy: 'clinic'
+        };
+      } else if (responseData.responseType === 'counter-offer') {
+        appointment.status = 'counter-offered';
+        // Update appointment details with proposed changes
+        if (responseData.proposedDate) appointment.appointmentDate = responseData.proposedDate;
+        if (responseData.proposedDuration) appointment.duration = responseData.proposedDuration;
+      } else if (responseData.responseType === 'rejection') {
+        appointment.status = 'rejected';
+      }
+
+      await appointment.save();
+      await appointment.populate(['patient', 'clinic']);
+      
+      logger.info(`Clinic response added to appointment ${appointmentId}: ${responseData.responseType}`);
+      return appointment;
+    } catch (error: any) {
+      logger.error('Error processing clinic response:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Patient responds to clinic counter-offer
+   */
+  static async patientResponse(
+    appointmentId: string,
+    responseData: {
+      responseType: 'accept' | 'reject' | 'counter';
+      message?: string;
+    }
+  ): Promise<IAppointment> {
+    try {
+      const appointment = await Appointment.findById(appointmentId);
+      if (!appointment) {
+        throw new Error('Appointment not found');
+      }
+
+      // Add patient response
+      appointment.patientResponses.push({
+        responseType: responseData.responseType,
+        message: responseData.message,
+        respondedAt: new Date()
+      });
+
+      // Update appointment status
+      if (responseData.responseType === 'accept') {
+        appointment.status = 'confirmed';
+        appointment.confirmedDetails = {
+          finalDate: appointment.appointmentDate,
+          finalTime: appointment.originalRequest.requestedTime,
+          finalDuration: appointment.duration,
+          confirmedAt: new Date(),
+          confirmedBy: 'patient'
+        };
+      } else if (responseData.responseType === 'reject') {
+        appointment.status = 'rejected';
+      } else if (responseData.responseType === 'counter') {
+        appointment.status = 'counter-offered';
+      }
+
+      await appointment.save();
+      await appointment.populate(['patient', 'clinic']);
+      
+      logger.info(`Patient response added to appointment ${appointmentId}: ${responseData.responseType}`);
+      return appointment;
+    } catch (error: any) {
+      logger.error('Error processing patient response:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get patient's appointment requests
+   */
+  static async getPatientRequests(patientId: string): Promise<IAppointment[]> {
+    try {
+      const appointments = await Appointment.find({
+        patient: patientId,
+        status: { $in: ['pending', 'counter-offered', 'confirmed'] }
+      })
+        .populate('clinic', 'name address phone email')
+        .sort({ lastActivityAt: -1 })
+        .lean();
+
+      return appointments;
+    } catch (error: any) {
+      logger.error('Error fetching patient requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get clinic's appointment requests
+   */
+  static async getClinicRequests(clinicId: string): Promise<IAppointment[]> {
+    try {
+      const appointments = await Appointment.find({
+        clinic: clinicId,
+        status: { $in: ['pending', 'counter-offered', 'confirmed'] }
+      })
+        .populate('patient', 'name email phone')
+        .sort({ lastActivityAt: -1 })
+        .lean();
+
+      return appointments;
+    } catch (error: any) {
+      logger.error('Error fetching clinic requests:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel appointment (enhanced for new workflow)
+   */
+  static async cancelAppointment(appointmentId: string, reason?: string): Promise<IAppointment> {
+    try {
+      const appointment = await Appointment.findById(appointmentId);
+      if (!appointment) {
+        throw new Error('Appointment not found');
+      }
+
+      appointment.status = 'cancelled';
+      if (reason) {
+        appointment.notes = `${appointment.notes || ''}\nCancellation reason: ${reason}`.trim();
+      }
+
+      await appointment.save();
+      await appointment.populate(['patient', 'clinic']);
+      
+      logger.info(`Appointment ${appointmentId} cancelled`);
+      return appointment;
+    } catch (error: any) {
+      logger.error('Error cancelling appointment:', error);
       throw error;
     }
   }

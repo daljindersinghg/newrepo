@@ -48,6 +48,51 @@ appointmentRouter.post(
   AvailabilityController.reserveSlot
 );
 
+// ============ NEW WORKFLOW ENDPOINTS ============
+// Request-response based appointment booking
+
+// Patient requests appointment
+appointmentRouter.post(
+  '/request',
+  // authenticatePatient,
+  AppointmentController.requestAppointment
+);
+
+// Clinic responds to appointment request
+appointmentRouter.post(
+  '/:id/clinic-response',
+  // authenticateClinic,
+  AppointmentController.clinicResponse
+);
+
+// Patient responds to clinic counter-offer
+appointmentRouter.post(
+  '/:id/patient-response',
+  // authenticatePatient,
+  AppointmentController.patientResponse
+);
+
+// Get patient's appointment requests
+appointmentRouter.get(
+  '/my-requests',
+  // authenticatePatient,
+  AppointmentController.getMyRequests
+);
+
+// Get clinic's appointment requests
+appointmentRouter.get(
+  '/clinic-requests',
+  // authenticateClinic,
+  AppointmentController.getClinicRequests
+);
+
+// Cancel appointment
+appointmentRouter.patch(
+  '/:id/cancel',
+  // authenticatePatient or authenticateClinic,
+  AppointmentController.cancelAppointment
+);
+
 // ============ APPOINTMENT MANAGEMENT ============
 // These endpoints are for actual appointment CRUD operations
 
@@ -205,34 +250,6 @@ appointmentRouter.patch(
   }
 );
 
-// Cancel appointment
-appointmentRouter.patch(
-  '/:id/cancel',
-  // authenticatePatient,
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { reason } = req.body;
-
-      // Would implement cancellation logic
-      // const cancelledAppointment = await AppointmentService.cancelAppointment(id, reason);
-
-      res.json({
-        success: true,
-        message: 'Appointment cancelled successfully',
-        data: {
-          appointmentId: id,
-          status: 'cancelled',
-          reason,
-          cancelledAt: new Date().toISOString()
-        }
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-);
 
 // ============ ADMIN ENDPOINTS ============
 // These would typically be in admin router but included for clinic management

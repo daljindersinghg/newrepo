@@ -8,9 +8,10 @@ import TimeSlotRequestPicker from './TimeSlotRequestPicker';
 interface BookingFlowProps {
   clinicId: string;
   clinicName?: string;
+  onClose?: () => void;
 }
 
-export default function BookingFlow({ clinicId, clinicName }: BookingFlowProps) {
+export default function BookingFlow({ clinicId, clinicName, onClose }: BookingFlowProps) {
   const { patientInfo, isAuthenticated, isLoading } = usePatientAuth();
   const { showAuthModal } = useAuth();
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null);
@@ -64,6 +65,7 @@ export default function BookingFlow({ clinicId, clinicName }: BookingFlowProps) 
         selectedSlot={selectedSlot}
         onSlotSelect={setSelectedSlot}
         duration={30}
+        onSuccess={onClose}
       />
     </div>
   );

@@ -2,19 +2,22 @@
 
 import { useState } from 'react';
 import { format, addDays, startOfDay, isSameDay, setHours, setMinutes } from 'date-fns';
+import { appointmentApi, AppointmentRequest } from '@/lib/api/appointments';
 
 interface TimeSlotRequestPickerProps {
   clinicId: string;
   selectedSlot: Date | null;
   onSlotSelect: (slot: Date | null) => void;
   duration?: number;
+  onSuccess?: () => void;
 }
 
 export default function TimeSlotRequestPicker({ 
   clinicId, 
   selectedSlot, 
   onSlotSelect, 
-  duration = 30 
+  duration = 30,
+  onSuccess
 }: TimeSlotRequestPickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
@@ -68,31 +71,35 @@ export default function TimeSlotRequestPicker({
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/appointments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          clinic: clinicId,
-          appointmentDate: selectedSlot,
-          duration,
-          type: 'consultation',
-          requestedReason: reason.trim()
-        }),
-      });
+      const requestData: AppointmentRequest = {
+        clinicId: clinicId,
+        requestedDate: selectedSlot,
+        requestedTime: format(selectedSlot, 'HH:mm'),
+        duration,
+        type: 'consultation',
+        reason: reason.trim()
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit appointment request');
+      const result = await appointmentApi.requestAppointment(requestData);
+      
+      if (result.success) {
+        setSuccess(true);
+        setReason('');
+        onSlotSelect(null);
+        setSelectedTime('09:00');
+        
+        // Close modal after a short delay to show success message
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess();
+          }, 2000);
+        }
+      } else {
+        throw new Error(result.message || 'Failed to submit appointment request');
       }
-
-      setSuccess(true);
-      setReason('');
-      onSlotSelect(null);
-      setSelectedTime('09:00');
       
     } catch (err) {
+      console.error('Error submitting appointment request:', err);
       setError(err instanceof Error ? err.message : 'Failed to submit appointment request');
     } finally {
       setLoading(false);
@@ -108,16 +115,24 @@ export default function TimeSlotRequestPicker({
           </svg>
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">Request Submitted!</h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 mb-6">
           Your appointment request has been sent to the clinic. They will review and respond soon.
         </p>
-        <button
-          type="button"
-          onClick={() => setSuccess(false)}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Make Another Request
-        </button>
+        <div className="flex gap-3 justify-center">
+          <a
+            href="/appointments"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-decoration-none"
+          >
+            View My Requests
+          </a>
+          <button
+            type="button"
+            onClick={() => setSuccess(false)}
+            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            Make Another Request
+          </button>
+        </div>
       </div>
     );
   }
