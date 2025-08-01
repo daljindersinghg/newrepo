@@ -1,5 +1,6 @@
 import { Notification, IAppointment, Patient, Clinic } from '../models';
 import logger from '../config/logger.config';
+import { EmailService } from './email.service';
 
 export class NotificationService {
   static async sendAppointmentRequest(appointment: IAppointment) {
@@ -83,8 +84,50 @@ export class NotificationService {
 
       await notification.save();
       
-      // TODO: Send email notification
-      // await this.sendEmail(patient.email, notification.title, notification.message);
+      // Send email notification based on response type
+      try {
+        switch (latestResponse.responseType) {
+          case 'confirmation':
+            await EmailService.sendAppointmentConfirmation(
+              patient.email,
+              patient.name || patient.email,
+              clinic.name,
+              appointment.appointmentDate,
+              appointment.originalRequest.requestedTime,
+              appointment.duration,
+              appointment.type
+            );
+            break;
+          case 'counter-offer':
+            if (latestResponse.proposedDate && latestResponse.proposedTime) {
+              await EmailService.sendAlternativeTime(
+                patient.email,
+                patient.name || patient.email,
+                clinic.name,
+                appointment.originalRequest.requestedDate,
+                appointment.originalRequest.requestedTime,
+                latestResponse.proposedDate,
+                latestResponse.proposedTime,
+                latestResponse.proposedDuration || appointment.duration,
+                latestResponse.message
+              );
+            }
+            break;
+          case 'rejection':
+            await EmailService.sendAppointmentDeclined(
+              patient.email,
+              patient.name || patient.email,
+              clinic.name,
+              appointment.originalRequest.requestedDate,
+              appointment.originalRequest.requestedTime,
+              latestResponse.message
+            );
+            break;
+        }
+      } catch (emailError) {
+        logger.error('Error sending email notification:', emailError);
+        // Don't throw - we don't want to fail the whole operation if email fails
+      }
       
       logger.info(`Clinic response notification sent to patient ${patient._id}`);
       return notification;
@@ -173,27 +216,58 @@ export class NotificationService {
     }
   }
 
-  static async getNotifications(recipientId: string, recipientType: 'patient' | 'clinic') {
+  static async getNotifications(
+    recipientId: string, 
+    recipientType: 'patient' | 'clinic',
+    page: number = 1,
+    limit: number = 20,
+    unreadOnly: boolean = false
+  ) {
     try {
-      const notifications = await Notification.find({
+      const skip = (page - 1) * limit;
+      const query: any = {
         recipient: recipientId,
         recipientType
-      })
-      .populate('relatedAppointment')
-      .sort({ createdAt: -1 })
-      .limit(50);
+      };
 
-      return notifications;
+      if (unreadOnly) {
+        query.read = false;
+      }
+
+      const [notifications, total] = await Promise.all([
+        Notification.find(query)
+          .populate('relatedAppointment')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Notification.countDocuments(query)
+      ]);
+
+      return {
+        notifications,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
     } catch (error) {
       logger.error('Error fetching notifications:', error);
       throw error;
     }
   }
 
-  static async markAsRead(notificationId: string) {
+  static async markAsRead(notificationId: string, recipientId?: string) {
     try {
-      const notification = await Notification.findByIdAndUpdate(
-        notificationId,
+      const query: any = { _id: notificationId };
+      if (recipientId) {
+        query.recipient = recipientId;
+      }
+
+      const notification = await Notification.findOneAndUpdate(
+        query,
         { read: true, readAt: new Date() },
         { new: true }
       );
@@ -201,6 +275,57 @@ export class NotificationService {
       return notification;
     } catch (error) {
       logger.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  static async getUnreadCount(recipientId: string, recipientType: 'patient' | 'clinic'): Promise<number> {
+    try {
+      const count = await Notification.countDocuments({
+        recipient: recipientId,
+        recipientType,
+        read: false
+      });
+
+      return count;
+    } catch (error) {
+      logger.error('Error fetching unread count:', error);
+      throw error;
+    }
+  }
+
+  static async markAllAsRead(recipientId: string, recipientType: 'patient' | 'clinic') {
+    try {
+      const result = await Notification.updateMany(
+        {
+          recipient: recipientId,
+          recipientType,
+          read: false
+        },
+        {
+          read: true,
+          readAt: new Date()
+        }
+      );
+
+      return result;
+    } catch (error) {
+      logger.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  static async deleteNotification(notificationId: string, recipientId?: string): Promise<boolean> {
+    try {
+      const query: any = { _id: notificationId };
+      if (recipientId) {
+        query.recipient = recipientId;
+      }
+
+      const result = await Notification.findOneAndDelete(query);
+      return !!result;
+    } catch (error) {
+      logger.error('Error deleting notification:', error);
       throw error;
     }
   }

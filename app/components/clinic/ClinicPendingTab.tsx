@@ -3,21 +3,34 @@
 import { useState, useEffect } from 'react';
 import { appointmentApi, Appointment, ClinicResponse } from '@/lib/api/appointments';
 import { format } from 'date-fns';
+import { useClinicAuth } from '@/hooks/useClinicAuth';
+import { SuggestAlternativeModal } from './SuggestAlternativeModal';
 
 export function ClinicPendingTab() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const { clinic } = useClinicAuth();
 
-  // Mock clinic ID - in real app this would come from auth context
-  const clinicId = "clinic_123";
+  // Get clinic ID from authenticated clinic data
+  const clinicId = clinic?.id;
 
   useEffect(() => {
-    fetchPendingAppointments();
-  }, []);
+    if (clinicId) {
+      fetchPendingAppointments();
+    }
+  }, [clinicId]);
 
   const fetchPendingAppointments = async () => {
+    if (!clinicId) {
+      setError('Clinic ID not available');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -80,20 +93,19 @@ export function ClinicPendingTab() {
   };
 
   const handleCounterOffer = (appointment: Appointment) => {
-    const newDate = prompt('Please enter a new date (YYYY-MM-DD):');
-    const newTime = prompt('Please enter a new time (HH:MM):');
-    const message = prompt('Optional message to patient:') || 'We would like to suggest an alternative time for your appointment.';
+    setSelectedAppointment(appointment);
+    setModalOpen(true);
+  };
 
-    if (!newDate || !newTime) return;
+  const handleModalSubmit = (response: ClinicResponse) => {
+    if (selectedAppointment) {
+      handleClinicResponse(selectedAppointment._id, response);
+    }
+  };
 
-    const response: ClinicResponse = {
-      responseType: 'counter-offer',
-      proposedDate: new Date(newDate),
-      proposedTime: newTime,
-      proposedDuration: appointment.duration,
-      message
-    };
-    handleClinicResponse(appointment._id, response);
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedAppointment(null);
   };
 
   if (loading) {
@@ -233,6 +245,15 @@ export function ClinicPendingTab() {
           ))}
         </div>
       </div>
+
+      {/* Suggest Alternative Modal */}
+      <SuggestAlternativeModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        appointment={selectedAppointment}
+        onSubmit={handleModalSubmit}
+        isLoading={processingId === selectedAppointment?._id}
+      />
     </div>
   );
 }

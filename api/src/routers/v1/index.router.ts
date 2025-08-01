@@ -6,7 +6,7 @@ import patientRouter from "./patient.router";
 import patientAuthRouter from "./patientAuth.router";
 import publicRouter from "./public.router";
 import clinicRouter from "./clinic.router";
-
+import notificationRouter from "./notification.router";
 import appointmentRouter from "./appointment.router"; // Add this import
 
 const v1Router = express.Router();
@@ -30,6 +30,9 @@ v1Router.use("/admin", adminRouter);
 
 // Clinic endpoints (for clinic authentication and profile)
 v1Router.use("/clinic", clinicRouter);
+
+// Notification endpoints (for clinics)
+v1Router.use("/notifications", notificationRouter);
 
 // Appointment endpoints
 v1Router.use("/appointments", appointmentRouter);

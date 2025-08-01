@@ -3,19 +3,28 @@
 import { useState, useEffect } from 'react';
 import { appointmentApi, Appointment } from '@/lib/api/appointments';
 import { format } from 'date-fns';
+import { useClinicAuth } from '@/hooks/useClinicAuth';
 
 export function ClinicOverviewTab() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const { clinic } = useClinicAuth();
 
-  // Mock clinic ID - in real app this would come from auth context
-  const clinicId = "clinic_123";
+  // Get clinic ID from authenticated clinic data
+  const clinicId = clinic?.id;
 
   useEffect(() => {
-    fetchAppointments();
-  }, []);
+    if (clinicId) {
+      fetchAppointments();
+    }
+  }, [clinicId]);
 
   const fetchAppointments = async () => {
+    if (!clinicId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await appointmentApi.getClinicRequests(clinicId);
       if (result.success) {

@@ -1,7 +1,7 @@
 // api/src/routers/v1/clinic.router.ts
 import express from "express";
 import { ClinicController } from "../../controllers/clinic.controller";
-
+import { clinicAuth } from "../../middleware/clinicAuth.middleware";
 
 const clinicRouter = express.Router();
 
@@ -12,6 +12,7 @@ clinicRouter.post("/logout", ClinicController.logoutClinic);
 
 // ============ PROTECTED ROUTES (REQUIRE AUTH) ============
 // Apply clinic authentication to all routes below
+clinicRouter.use(clinicAuth);
 
 // Clinic Dashboard/Profile routes
 clinicRouter.get("/profile", ClinicController.getClinicProfile);

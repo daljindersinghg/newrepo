@@ -379,7 +379,7 @@ export class ClinicService {
     }
   ): Promise<IClinic> {
     try {
-      const clinic = await Clinic.findById(clinicId).select('+password');
+      const clinic = await Clinic.findById(clinicId);
       if (!clinic) {
         throw new Error('Clinic not found');
       }
@@ -427,7 +427,7 @@ export class ClinicService {
     }
   ): Promise<IClinic> {
     try {
-      const clinic = await Clinic.findById(clinicId).select('+password');
+      const clinic = await Clinic.findById(clinicId);
       if (!clinic) {
         throw new Error('Clinic not found');
       }
