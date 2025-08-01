@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotificationService } from '../services/notification.service';
+import { EmailService } from '../services/email.service';
 import logger from '../config/logger.config';
 
 export class NotificationController {
@@ -119,6 +120,34 @@ export class NotificationController {
       });
     } catch (error) {
       logger.error('Error deleting notification:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Check email service status
+   */
+  static async checkEmailStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const configured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+      let connectionWorking = false;
+
+      if (configured) {
+        connectionWorking = await EmailService.testConnection();
+      }
+
+      res.status(200).json({
+        success: true,
+        emailService: {
+          configured,
+          connectionWorking,
+          host: process.env.SMTP_HOST || 'smtp.gmail.com',
+          port: process.env.SMTP_PORT || '587',
+          user: configured ? process.env.SMTP_USER : 'Not configured'
+        }
+      });
+    } catch (error) {
+      logger.error('Error checking email status:', error);
       next(error);
     }
   }

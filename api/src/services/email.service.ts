@@ -285,6 +285,29 @@ The ${clinicName} Team
     appointmentType: string
   ): Promise<void> {
     try {
+      // Check if email service is configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ Email service not configured - skipping appointment confirmation email');
+        logger.warn('Email service not configured - skipping appointment confirmation email');
+        return;
+      }
+
+      console.log('📧 [EMAIL SERVICE] Preparing appointment confirmation email...');
+      console.log('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.log('🏥 Clinic:', clinicName);
+      console.log('📅 Date:', appointmentDate.toDateString(), '| Time:', appointmentTime);
+      console.log('⏱️ Duration:', duration, 'minutes | Type:', appointmentType);
+
+      logger.info(`📧 Preparing appointment confirmation email:`, {
+        recipient: patientEmail,
+        patientName: patientName,
+        clinic: clinicName,
+        appointmentDate: appointmentDate.toISOString(),
+        appointmentTime,
+        duration,
+        appointmentType
+      });
+
       const transporter = this.createTransporter();
       const template = this.generateAppointmentConfirmationEmail(
         patientName,
@@ -303,10 +326,33 @@ The ${clinicName} Team
         html: template.html
       };
 
+      console.log('📤 Sending email with subject:', template.subject);
       await transporter.sendMail(mailOptions);
-      logger.info(`Appointment confirmation email sent to ${patientEmail}`);
+      
+      console.log('✅ [SUCCESS] APPOINTMENT CONFIRMATION email sent to:', patientEmail);
+      console.log('📧 From:', mailOptions.from);
+      console.log('📋 Subject:', template.subject);
+      console.log('🕐 Timestamp:', new Date().toISOString());
+      
+      logger.info(`✅ APPOINTMENT CONFIRMATION email successfully sent:`, {
+        to: patientEmail,
+        patient: patientName,
+        from_clinic: clinicName,
+        subject: template.subject,
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      logger.error('Error sending appointment confirmation email:', error);
+      console.error('❌ [ERROR] Failed to send appointment confirmation email');
+      console.error('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.error('🏥 Clinic:', clinicName);
+      console.error('🔥 Error:', error instanceof Error ? error.message : String(error));
+      
+      logger.error(`❌ Failed to send appointment confirmation email:`, {
+        recipient: patientEmail,
+        patient: patientName,
+        clinic: clinicName,
+        error: error instanceof Error ? error.message : String(error)
+      });
       throw error;
     }
   }
@@ -323,6 +369,20 @@ The ${clinicName} Team
     message: string
   ): Promise<void> {
     try {
+      // Check if email service is configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ Email service not configured - skipping alternative time email');
+        logger.warn('Email service not configured - skipping alternative time email');
+        return;
+      }
+
+      console.log('🔄 [EMAIL SERVICE] Preparing alternative time email...');
+      console.log('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.log('🏥 Clinic:', clinicName);
+      console.log('❌ Original:', originalDate.toDateString(), 'at', originalTime);
+      console.log('✅ Proposed:', proposedDate.toDateString(), 'at', proposedTime);
+      console.log('💬 Message:', message);
+
       const transporter = this.createTransporter();
       const template = this.generateAlternativeTimeEmail(
         patientName,
@@ -343,9 +403,20 @@ The ${clinicName} Team
         html: template.html
       };
 
+      console.log('📤 Sending alternative time email with subject:', template.subject);
       await transporter.sendMail(mailOptions);
+      
+      console.log('✅ [SUCCESS] ALTERNATIVE TIME email sent to:', patientEmail);
+      console.log('📧 From:', mailOptions.from);
+      console.log('🕐 Timestamp:', new Date().toISOString());
+      
       logger.info(`Alternative time email sent to ${patientEmail}`);
     } catch (error) {
+      console.error('❌ [ERROR] Failed to send alternative time email');
+      console.error('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.error('🏥 Clinic:', clinicName);
+      console.error('🔥 Error:', error instanceof Error ? error.message : String(error));
+      
       logger.error('Error sending alternative time email:', error);
       throw error;
     }
@@ -360,6 +431,19 @@ The ${clinicName} Team
     reason: string
   ): Promise<void> {
     try {
+      // Check if email service is configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ Email service not configured - skipping appointment declined email');
+        logger.warn('Email service not configured - skipping appointment declined email');
+        return;
+      }
+
+      console.log('❌ [EMAIL SERVICE] Preparing appointment declined email...');
+      console.log('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.log('🏥 Clinic:', clinicName);
+      console.log('📅 Declined appointment:', originalDate.toDateString(), 'at', originalTime);
+      console.log('💬 Reason:', reason);
+
       const transporter = this.createTransporter();
       const template = this.generateDeclinedEmail(
         patientName,
@@ -377,9 +461,20 @@ The ${clinicName} Team
         html: template.html
       };
 
+      console.log('📤 Sending declined email with subject:', template.subject);
       await transporter.sendMail(mailOptions);
+      
+      console.log('✅ [SUCCESS] APPOINTMENT DECLINED email sent to:', patientEmail);
+      console.log('📧 From:', mailOptions.from);
+      console.log('🕐 Timestamp:', new Date().toISOString());
+      
       logger.info(`Appointment declined email sent to ${patientEmail}`);
     } catch (error) {
+      console.error('❌ [ERROR] Failed to send appointment declined email');
+      console.error('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.error('🏥 Clinic:', clinicName);
+      console.error('🔥 Error:', error instanceof Error ? error.message : String(error));
+      
       logger.error('Error sending appointment declined email:', error);
       throw error;
     }
@@ -387,11 +482,28 @@ The ${clinicName} Team
 
   static async testConnection(): Promise<boolean> {
     try {
+      // Check if email service is configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ Email service not configured - cannot test connection');
+        logger.warn('Email service not configured - cannot test connection');
+        return false;
+      }
+
+      console.log('🔧 [EMAIL SERVICE] Testing SMTP connection...');
+      console.log('📧 SMTP User:', process.env.SMTP_USER);
+      console.log('🌐 SMTP Host:', process.env.SMTP_HOST);
+      console.log('🚪 SMTP Port:', process.env.SMTP_PORT);
+
       const transporter = this.createTransporter();
       await transporter.verify();
+      
+      console.log('✅ [SUCCESS] Email service connection verified successfully!');
       logger.info('Email service connection verified successfully');
       return true;
     } catch (error) {
+      console.error('❌ [ERROR] Email service connection failed');
+      console.error('🔥 Error:', error instanceof Error ? error.message : String(error));
+      
       logger.error('Email service connection failed:', error);
       return false;
     }

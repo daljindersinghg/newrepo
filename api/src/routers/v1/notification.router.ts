@@ -22,4 +22,7 @@ notificationRouter.patch('/mark-all-read', NotificationController.markAllAsRead)
 // Delete notification
 notificationRouter.delete('/:notificationId', NotificationController.deleteNotification);
 
+// Check email service status (for testing/debugging)
+notificationRouter.get('/email-status', NotificationController.checkEmailStatus);
+
 export default notificationRouter;
