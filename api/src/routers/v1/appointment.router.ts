@@ -1,53 +1,11 @@
 // api/src/routers/v1/appointment.router.ts (Complete Implementation)
 import express from 'express';
 import { AppointmentController } from '../../controllers/appointment.controller';
-import { AvailabilityController } from '../../controllers/availability.controller';
 // import { authenticatePatient, authenticateAdmin } from '../../middleware/auth.middleware';
 // import { validateRequestBody } from '../../validators';
 // import { appointmentSchema, rescheduleSchema } from '../../validators/appointment.validator';
 
 const appointmentRouter = express.Router();
-
-// ============ AVAILABILITY ENDPOINTS ============
-// These endpoints are for checking availability before booking
-
-// Get available time slots for a specific clinic and date
-appointmentRouter.get(
-  '/clinics/:clinicId/availability',
-  AvailabilityController.getAvailableSlots
-);
-
-// Get weekly availability for calendar view
-appointmentRouter.get(
-  '/clinics/:clinicId/availability/weekly',
-  AvailabilityController.getWeeklyAvailability
-);
-
-// Check if specific slot is available
-appointmentRouter.get(
-  '/clinics/:clinicId/slots/check',
-  AvailabilityController.checkSlotAvailability
-);
-
-// Get next available appointment slot
-appointmentRouter.get(
-  '/clinics/:clinicId/slots/next-available',
-  AvailabilityController.getNextAvailableSlot
-);
-
-// Get clinic operating hours
-appointmentRouter.get(
-  '/clinics/:clinicId/hours',
-  AvailabilityController.getClinicHours
-);
-
-// Reserve a time slot temporarily (for booking flow)
-appointmentRouter.post(
-  '/clinics/:clinicId/slots/reserve',
-  // authenticatePatient, // Would authenticate the patient
-  AvailabilityController.reserveSlot
-);
-
 // ============ NEW WORKFLOW ENDPOINTS ============
 // Request-response based appointment booking
 
@@ -229,9 +187,8 @@ appointmentRouter.patch(
         return;
       }
 
-      // Check if new slot is available
-      // await AppointmentController.getAppointmentById(req, res, next);
-      // Would need to implement slot availability check and reschedule logic
+      // Update appointment with new date/time
+      // Would implement reschedule logic here
 
       res.json({
         success: true,

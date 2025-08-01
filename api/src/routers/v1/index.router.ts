@@ -27,11 +27,7 @@ v1Router.use("/patient", patientRouter);
 // Admin endpoints (requires admin authentication)
 v1Router.use("/admin", adminRouter);
 
-// Appointment and availability endpoints
+// Appointment endpoints
 v1Router.use("/appointments", appointmentRouter);
-
-// You could also add these as direct routes for better organization:
-// v1Router.use("/availability", appointmentRouter); // For availability-specific routes
-// v1Router.use("/clinics", appointmentRouter); // For clinic-specific routes
 
 export default v1Router;
