@@ -216,27 +216,58 @@ export class NotificationService {
     }
   }
 
-  static async getNotifications(recipientId: string, recipientType: 'patient' | 'clinic') {
+  static async getNotifications(
+    recipientId: string, 
+    recipientType: 'patient' | 'clinic',
+    page: number = 1,
+    limit: number = 20,
+    unreadOnly: boolean = false
+  ) {
     try {
-      const notifications = await Notification.find({
+      const skip = (page - 1) * limit;
+      const query: any = {
         recipient: recipientId,
         recipientType
-      })
-      .populate('relatedAppointment')
-      .sort({ createdAt: -1 })
-      .limit(50);
+      };
 
-      return notifications;
+      if (unreadOnly) {
+        query.read = false;
+      }
+
+      const [notifications, total] = await Promise.all([
+        Notification.find(query)
+          .populate('relatedAppointment')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        Notification.countDocuments(query)
+      ]);
+
+      return {
+        notifications,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
     } catch (error) {
       logger.error('Error fetching notifications:', error);
       throw error;
     }
   }
 
-  static async markAsRead(notificationId: string) {
+  static async markAsRead(notificationId: string, recipientId?: string) {
     try {
-      const notification = await Notification.findByIdAndUpdate(
-        notificationId,
+      const query: any = { _id: notificationId };
+      if (recipientId) {
+        query.recipient = recipientId;
+      }
+
+      const notification = await Notification.findOneAndUpdate(
+        query,
         { read: true, readAt: new Date() },
         { new: true }
       );
@@ -244,6 +275,57 @@ export class NotificationService {
       return notification;
     } catch (error) {
       logger.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  static async getUnreadCount(recipientId: string, recipientType: 'patient' | 'clinic'): Promise<number> {
+    try {
+      const count = await Notification.countDocuments({
+        recipient: recipientId,
+        recipientType,
+        read: false
+      });
+
+      return count;
+    } catch (error) {
+      logger.error('Error fetching unread count:', error);
+      throw error;
+    }
+  }
+
+  static async markAllAsRead(recipientId: string, recipientType: 'patient' | 'clinic') {
+    try {
+      const result = await Notification.updateMany(
+        {
+          recipient: recipientId,
+          recipientType,
+          read: false
+        },
+        {
+          read: true,
+          readAt: new Date()
+        }
+      );
+
+      return result;
+    } catch (error) {
+      logger.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  static async deleteNotification(notificationId: string, recipientId?: string): Promise<boolean> {
+    try {
+      const query: any = { _id: notificationId };
+      if (recipientId) {
+        query.recipient = recipientId;
+      }
+
+      const result = await Notification.findOneAndDelete(query);
+      return !!result;
+    } catch (error) {
+      logger.error('Error deleting notification:', error);
       throw error;
     }
   }
