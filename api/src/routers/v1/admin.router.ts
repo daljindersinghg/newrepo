@@ -2,6 +2,7 @@
 import express from "express";
 import { AdminController } from "../../controllers/admin.controller";
 import { ClinicController } from "../../controllers/clinic.controller";
+import { AnalyticsController } from "../../controllers/analytics.controller";
 
 
 const adminRouter = express.Router();
@@ -34,6 +35,13 @@ adminRouter.post("/clinics/:id/sync-google", ClinicController.syncClinicWithGoog
 // Phase 2: Setup authentication for specific clinic
 adminRouter.post("/clinics/:id/setup-auth", ClinicController.setupClinicAuth);
 adminRouter.put("/clinics/:id/update-auth", ClinicController.updateClinicAuth);
+
+// Analytics endpoints
+adminRouter.get("/analytics/dashboard", AnalyticsController.getDashboardData);
+adminRouter.get("/analytics/patient-events", AnalyticsController.getPatientEvents);
+adminRouter.get("/analytics/patient-journey", AnalyticsController.getPatientJourney);
+adminRouter.get("/analytics/patient-dropoffs", AnalyticsController.getPatientDropoffs);
+adminRouter.post("/analytics/patient-cohort", AnalyticsController.getPatientCohort);
 
 // ============ PARAMETERIZED ROUTES LAST ============
 // These MUST come AFTER all specific routes

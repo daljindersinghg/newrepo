@@ -272,3 +272,5 @@ export function GooglePlacesAutocomplete({
     </div>
   );
 }
+
+export default GooglePlacesAutocomplete;

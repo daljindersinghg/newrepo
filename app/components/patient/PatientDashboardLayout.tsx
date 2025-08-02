@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { useAuth } from '@/providers/AuthProvider';
+import { usePatientTracking, usePageTracking } from '@/hooks/usePatientTracking';
 import { cn } from '@/lib/utils';
 
 interface PatientDashboardLayoutProps {
@@ -14,7 +15,32 @@ interface PatientDashboardLayoutProps {
 export function PatientDashboardLayout({ children, activeTab, setActiveTab }: PatientDashboardLayoutProps) {
   const { patientInfo, isAuthenticated, logout } = usePatientAuth();
   const { showAuthModal } = useAuth();
+  const { trackEvent } = usePatientTracking();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Track page view for patient dashboard
+  usePageTracking('patient_dashboard', { active_tab: activeTab });
+
+  const handleTabChange = (tab: string) => {
+    // Track tab navigation
+    trackEvent('patient_dashboard_tab_clicked', {
+      from_tab: activeTab,
+      to_tab: tab,
+      tab_name: tab
+    });
+    
+    setActiveTab(tab);
+  };
+
+  const handleLogout = () => {
+    // Track logout
+    trackEvent('patient_logout', {
+      logout_location: 'dashboard',
+      session_duration: Date.now() - (new Date(patientInfo?.loginDate || Date.now()).getTime())
+    });
+    
+    logout();
+  };
 
   const tabs = [
     {
@@ -116,7 +142,7 @@ export function PatientDashboardLayout({ children, activeTab, setActiveTab }: Pa
               <li key={tab.id}>
                 <button
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabChange(tab.id)}
                   className={cn(
                     "w-full flex items-center px-3 py-3 text-left rounded-lg transition-colors",
                     activeTab === tab.id
@@ -152,7 +178,7 @@ export function PatientDashboardLayout({ children, activeTab, setActiveTab }: Pa
           </div>
           <button
             type="button"
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full text-left text-sm text-gray-600 hover:text-gray-800 transition-colors"
           >
             Sign Out

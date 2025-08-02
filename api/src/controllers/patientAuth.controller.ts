@@ -7,6 +7,7 @@ import {
   PatientLoginData 
 } from '../services/patient.service';
 import logger from '../config/logger.config';
+import { trackPatientEvent, identifyPatient } from '../posthog';
 
 export class PatientAuthController {
   /**
@@ -19,6 +20,20 @@ export class PatientAuthController {
 
       console.log('TCL ~ :20 ~ PatientAuthController ~ signupStep1 ~ email::==', email)
 
+      // Track signup attempt
+      if (email) {
+        trackPatientEvent(
+          email, // Use email as distinct ID
+          'patient_signup_step1_attempted',
+          {
+            email: email.toLowerCase().trim(),
+            ip_address: req.ip,
+            user_agent: req.get('User-Agent'),
+            step: 1
+          },
+          email.toLowerCase().trim()
+        );
+      }
 
       // Validate required fields
       if (!email) {
@@ -33,6 +48,19 @@ export class PatientAuthController {
       const result = await PatientService.signupStep1({
         email: email.toLowerCase().trim()
       });
+
+      // Track success or failure
+      trackPatientEvent(
+        email.toLowerCase().trim(),
+        result.success ? 'patient_signup_step1_success' : 'patient_signup_step1_failed',
+        {
+          email: email.toLowerCase().trim(),
+          success: result.success,
+          message: result.message,
+          step: 1
+        },
+        email.toLowerCase().trim()
+      );
 
       const statusCode = result.success ? 200 : 400;
       res.status(statusCode).json(result);
@@ -61,8 +89,45 @@ export class PatientAuthController {
         insuranceProvider 
       }: PatientSignupStep2Data = req.body;
 
+      // Track signup step 2 attempt
+      if (email) {
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_signup_step2_attempted',
+          {
+            email: email.toLowerCase().trim(),
+            has_name: !!name,
+            has_phone: !!phone,
+            has_dob: !!dateOfBirth,
+            has_insurance: !!insuranceProvider,
+            ip_address: req.ip,
+            user_agent: req.get('User-Agent'),
+            step: 2
+          },
+          email.toLowerCase().trim()
+        );
+      }
+
       // Validate required fields
       if (!email || !otp || !name || !phone || !dateOfBirth) {
+        // Track validation failure
+        trackPatientEvent(
+          email?.toLowerCase().trim() || 'unknown',
+          'patient_signup_step2_validation_failed',
+          {
+            email: email?.toLowerCase().trim(),
+            missing_fields: {
+              email: !email,
+              otp: !otp,
+              name: !name,
+              phone: !phone,
+              dateOfBirth: !dateOfBirth
+            },
+            step: 2
+          },
+          email?.toLowerCase().trim()
+        );
+
         res.status(400).json({
           success: false,
           message: 'All required fields must be provided: email, otp, name, phone, dateOfBirth',
@@ -79,6 +144,45 @@ export class PatientAuthController {
         dateOfBirth: new Date(dateOfBirth),
         insuranceProvider
       });
+
+      // Track signup completion and identify patient
+      if (result.success) {
+        identifyPatient(
+          email.toLowerCase().trim(),
+          email.toLowerCase().trim(),
+          {
+            name: name.trim(),
+            phone: phone.trim(),
+            signup_completed_at: new Date().toISOString(),
+            has_insurance: !!insuranceProvider,
+            insurance_provider: insuranceProvider
+          }
+        );
+
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_signup_completed',
+          {
+            email: email.toLowerCase().trim(),
+            name: name.trim(),
+            phone: phone.trim(),
+            signup_method: 'email_otp',
+            step: 2
+          },
+          email.toLowerCase().trim()
+        );
+      } else {
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_signup_step2_failed',
+          {
+            email: email.toLowerCase().trim(),
+            error_message: result.message,
+            step: 2
+          },
+          email.toLowerCase().trim()
+        );
+      }
 
       const statusCode = result.success ? 200 : 400;
       
@@ -140,6 +244,21 @@ export class PatientAuthController {
     try {
       const { email } = req.body;
 
+      // Track login attempt
+      if (email) {
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_login_step1_attempted',
+          {
+            email: email.toLowerCase().trim(),
+            ip_address: req.ip,
+            user_agent: req.get('User-Agent'),
+            step: 1
+          },
+          email.toLowerCase().trim()
+        );
+      }
+
       if (!email) {
         res.status(400).json({
           success: false,
@@ -149,6 +268,19 @@ export class PatientAuthController {
       }
 
       const result = await PatientService.loginStep1(email.toLowerCase().trim());
+
+      // Track login step 1 result
+      trackPatientEvent(
+        email.toLowerCase().trim(),
+        result.success ? 'patient_login_step1_success' : 'patient_login_step1_failed',
+        {
+          email: email.toLowerCase().trim(),
+          success: result.success,
+          message: result.message,
+          step: 1
+        },
+        email.toLowerCase().trim()
+      );
 
       const statusCode = result.success ? 200 : 400;
       res.status(statusCode).json(result);
@@ -169,7 +301,38 @@ export class PatientAuthController {
     try {
       const { email, otp }: PatientLoginData = req.body;
 
+      // Track login step 2 attempt
+      if (email) {
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_login_step2_attempted',
+          {
+            email: email.toLowerCase().trim(),
+            has_otp: !!otp,
+            ip_address: req.ip,
+            user_agent: req.get('User-Agent'),
+            step: 2
+          },
+          email.toLowerCase().trim()
+        );
+      }
+
       if (!email || !otp) {
+        // Track validation failure
+        trackPatientEvent(
+          email?.toLowerCase().trim() || 'unknown',
+          'patient_login_step2_validation_failed',
+          {
+            email: email?.toLowerCase().trim(),
+            missing_fields: {
+              email: !email,
+              otp: !otp
+            },
+            step: 2
+          },
+          email?.toLowerCase().trim()
+        );
+
         res.status(400).json({
           success: false,
           message: 'Email and OTP are required'
@@ -181,6 +344,32 @@ export class PatientAuthController {
         email: email.toLowerCase().trim(),
         otp: otp.trim()
       });
+
+      // Track login completion
+      if (result.success) {
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_login_completed',
+          {
+            email: email.toLowerCase().trim(),
+            login_method: 'email_otp',
+            returning_user: true,
+            step: 2
+          },
+          email.toLowerCase().trim()
+        );
+      } else {
+        trackPatientEvent(
+          email.toLowerCase().trim(),
+          'patient_login_step2_failed',
+          {
+            email: email.toLowerCase().trim(),
+            error_message: result.message,
+            step: 2
+          },
+          email.toLowerCase().trim()
+        );
+      }
 
       const statusCode = result.success ? 200 : 400;
       

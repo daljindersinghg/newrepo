@@ -1,4 +1,4 @@
-// src/components/landing/CTASection.tsx
+
 export function CTASection() {
   return (
     <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 relative overflow-hidden">
@@ -19,14 +19,7 @@ export function CTASection() {
             Join thousands of happy patients who've found quality dental care and earned rewards through our platform
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-colors shadow-lg">
-              Find Dentists Near Me
-            </button>
-            <button className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-blue-600 transition-colors">
-              Learn More
-            </button>
-          </div>
+      
           
           <div className="flex items-center justify-center space-x-6 text-blue-100">
             <div className="flex items-center">
