@@ -4,6 +4,30 @@ import logger from '../config/logger.config';
 
 export class AnalyticsController {
   /**
+   * GET /api/v1/analytics/dashboard
+   * Get analytics dashboard data for admin panel
+   */
+  static async getDashboardData(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { timeRange = '7d' } = req.query;
+
+      // Generate mock dashboard data (replace with real PostHog queries)
+      const dashboardData = await AnalyticsController.generateDashboardData(timeRange as string);
+
+      res.status(200).json({
+        success: true,
+        data: dashboardData
+      });
+    } catch (error) {
+      logger.error('Error fetching dashboard data:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch dashboard data'
+      });
+    }
+  }
+
+  /**
    * GET /api/v1/analytics/patient-events
    * Get patient interaction events from PostHog
    */
@@ -285,5 +309,61 @@ export class AnalyticsController {
         }
       ]
     };
+  }
+
+  // Generate dashboard data for admin panel
+  private static async generateDashboardData(timeRange: string) {
+    // In real implementation, this would query PostHog API
+    const mockData = {
+      totalSignups: timeRange === '1d' ? 12 : timeRange === '7d' ? 85 : timeRange === '30d' ? 320 : 890,
+      activePatients: Math.floor(Math.random() * 50) + 10,
+      conversionRate: Math.floor(Math.random() * 30) + 15,
+      topLocations: [
+        { location: 'Toronto, ON', searches: 145 },
+        { location: 'Vancouver, BC', searches: 132 },
+        { location: 'Calgary, AB', searches: 98 },
+        { location: 'Montreal, QC', searches: 87 },
+        { location: 'Ottawa, ON', searches: 65 }
+      ],
+      dropoffData: {
+        landingPage: 1000,
+        signupStep1: 800,
+        signupStep2: 600,
+        searchResults: 450
+      },
+      recentActivity: [
+        {
+          email: 'patient1@example.com',
+          action: 'Completed signup',
+          timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
+          location: 'Toronto, ON'
+        },
+        {
+          email: 'patient2@example.com',
+          action: 'Searched for dentists',
+          timestamp: new Date(Date.now() - 12 * 60000).toISOString(),
+          location: 'Vancouver, BC'
+        },
+        {
+          email: 'patient3@example.com',
+          action: 'Viewed clinic details',
+          timestamp: new Date(Date.now() - 18 * 60000).toISOString(),
+          location: 'Calgary, AB'
+        },
+        {
+          email: 'patient4@example.com',
+          action: 'Started appointment booking',
+          timestamp: new Date(Date.now() - 25 * 60000).toISOString(),
+          location: 'Montreal, QC'
+        },
+        {
+          email: 'patient5@example.com',
+          action: 'Logged in',
+          timestamp: new Date(Date.now() - 35 * 60000).toISOString()
+        }
+      ]
+    };
+
+    return mockData;
   }
 }

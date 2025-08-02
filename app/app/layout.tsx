@@ -58,7 +58,6 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    sitemap: 'https://dentistnearme.ai/sitemap.xml',
   },
 }
 
@@ -69,7 +68,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* JSON-LD structured data */}
         <script
           type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',

@@ -42,5 +42,11 @@ export const adminApi = {
   async getProfile(adminId: string): Promise<any> {
     const response = await api.get(`/api/v1/admin/${adminId}`);
     return response.data;
+  },
+
+  // Get analytics dashboard data
+  async getDashboardAnalytics(timeRange: string = '7d'): Promise<any> {
+    const response = await api.get(`/api/v1/admin/analytics/dashboard?timeRange=${timeRange}`);
+    return response.data;
   }
 };

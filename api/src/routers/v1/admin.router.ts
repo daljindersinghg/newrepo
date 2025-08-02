@@ -37,6 +37,7 @@ adminRouter.post("/clinics/:id/setup-auth", ClinicController.setupClinicAuth);
 adminRouter.put("/clinics/:id/update-auth", ClinicController.updateClinicAuth);
 
 // Analytics endpoints
+adminRouter.get("/analytics/dashboard", AnalyticsController.getDashboardData);
 adminRouter.get("/analytics/patient-events", AnalyticsController.getPatientEvents);
 adminRouter.get("/analytics/patient-journey", AnalyticsController.getPatientJourney);
 adminRouter.get("/analytics/patient-dropoffs", AnalyticsController.getPatientDropoffs);
