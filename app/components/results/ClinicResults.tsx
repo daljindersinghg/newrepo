@@ -4,10 +4,11 @@
 import { useState, useEffect } from 'react';
 import { useSimpleTracking } from '../AnalyticsProvider';
 import { Button } from '@/components/ui/button';
-import { EmailCapture } from './EmailCapture';
 import { ClinicCard } from './ClinicCard';
 import { MapView } from './MapView';
 import { clinicApi, ClinicSearchFilters } from '@/lib/api/clinic';
+import { useAuth } from '@/providers/AuthProvider';
+import { usePatientAuth } from '@/hooks/usePatientAuth';
 
 interface Clinic {
   _id: string;
@@ -81,15 +82,17 @@ export function ClinicResults() {
   const [clinics, setClinics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showEmailCapture, setShowEmailCapture] = useState(true);
   const [location, setLocation] = useState<LocationData | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'name' | 'relevance'>('distance');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('');
   const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  
   const { track } = useSimpleTracking();
+  const { showAuthModal } = useAuth();
+  const { patientInfo, isAuthenticated } = usePatientAuth();
 
   useEffect(() => {
     // Get location from localStorage (set by search)
@@ -103,13 +106,14 @@ export function ClinicResults() {
       setLoading(false);
     }
 
-    // Check if user already provided email
-    const savedEmail = localStorage.getItem('userEmail');
-    if (savedEmail) {
-      setUserEmail(savedEmail);
-      setShowEmailCapture(false);
+    // Check if user is not authenticated, show auth prompt after 2 seconds
+    if (!isAuthenticated) {
+      const timer = setTimeout(() => {
+        setShowAuthPrompt(true);
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchClinics = async (locationData: LocationData, searchTerm?: string) => {
     try {
@@ -176,15 +180,11 @@ export function ClinicResults() {
     }
   };
 
-  const handleEmailSubmit = (email: string) => {
-    setUserEmail(email);
-    setShowEmailCapture(false);
-    if (email) {
-      localStorage.setItem('userEmail', email);
-    }
+  const handleAuthPrompt = () => {
+    setShowAuthPrompt(false);
+    showAuthModal('signup');
     
-    track('email_captured', {
-      email: email || 'skipped',
+    track('auth_prompted', {
       location: location?.address,
       clinics_shown: clinics.length
     });
@@ -192,7 +192,6 @@ export function ClinicResults() {
 
   const handleReturnToSearch = () => {
     localStorage.removeItem('searchLocation');
-    localStorage.removeItem('userEmail');
     window.location.href = '/';
   };
 
@@ -288,9 +287,9 @@ export function ClinicResults() {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${showEmailCapture ? 'overflow-hidden' : ''}`}>
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className={`bg-white shadow-sm border-b ${showEmailCapture ? 'filter blur-sm' : ''}`}>
+      <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -331,17 +330,52 @@ export function ClinicResults() {
         </div>
       </div>
 
-      {/* Email Capture Modal */}
-      {showEmailCapture && (
-        <EmailCapture
-          onSubmit={handleEmailSubmit}
-          clinicCount={clinics.length}
-          location={location?.address || 'your area'}
-        />
+      {/* Auth Prompt Modal */}
+      {showAuthPrompt && !isAuthenticated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative shadow-2xl border">
+            <button
+              onClick={() => setShowAuthPrompt(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Close modal"
+              title="Close modal"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full mb-4">
+                <span className="text-3xl">🦷</span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Ready to Book an Appointment?
+              </h2>
+              <p className="text-gray-600">
+                Sign up now to book appointments and get your $50 gift card!
+              </p>
+            </div>
+
+            <Button
+              onClick={handleAuthPrompt}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 mb-4"
+            >
+              Sign Up to Book Now
+            </Button>
+
+            <button
+              onClick={() => setShowAuthPrompt(false)}
+              className="w-full text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Continue browsing
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Main Content */}
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ${showEmailCapture ? 'filter blur-sm' : ''}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {clinics.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🦷</div>
@@ -447,7 +481,7 @@ export function ClinicResults() {
                     <ClinicCard
                       clinic={clinic} 
                       index={index}
-                      userEmail={userEmail}
+                      userEmail={patientInfo?.email || null}
                       isHighlighted={selectedClinicId === clinic._id}
                     />
                   </div>
@@ -468,7 +502,7 @@ export function ClinicResults() {
             </div>
 
             {/* Bottom CTA */}
-            {!showEmailCapture && clinics.length > 0 && (
+            {clinics.length > 0 && (
               <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-center">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   Ready to Book Your Appointment?

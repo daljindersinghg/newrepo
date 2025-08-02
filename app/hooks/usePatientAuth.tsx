@@ -58,13 +58,25 @@ export function usePatientAuth() {
 
   const logout = async () => {
     try {
-      // Call logout API to clear HTTP-only cookie
-      await api.post('/api/v1/patients/auth/logout');
+      // Call logout API to clear server-side tokens
+      const response = await api.post('/api/v1/patients/auth/logout');
+      console.log('Logout response:', response.data);
     } catch (error) {
-      console.error('Logout API error:', error);
+      console.error('Error during logout:', error);
     } finally {
-      // Always clear localStorage and redirect regardless of API response
+      // Clear all authentication and user-related data
       localStorage.removeItem('patientInfo');
+      localStorage.removeItem('searchHistory');
+      localStorage.removeItem('searchLocation');
+      
+      // Clear any other tokens that might exist
+      const authKeys = ['patientToken', 'accessToken', 'refreshToken', 'authToken'];
+      authKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+      
       setPatientInfo(null);
       window.location.href = '/';
     }

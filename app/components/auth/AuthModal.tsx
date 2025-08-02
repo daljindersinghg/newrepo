@@ -18,7 +18,7 @@ export function AuthModal() {
   if (!authModal.isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative shadow-xl border border-gray-200">
         {/* Close Button */}
         <button
@@ -42,7 +42,7 @@ export function AuthModal() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            {currentAction === 'login' ? 'Welcome Back!' : 'Join DentalCare+'}
+            {currentAction === 'login' ? 'Welcome Back!' : 'Join DentNearMe'}
           </h2>
           <p className="text-gray-600 text-sm leading-relaxed">
             {currentAction === 'login' 

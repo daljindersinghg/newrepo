@@ -85,7 +85,23 @@ export function useAdminAuth() {
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
+      // Clear all admin and authentication-related data
       clearAdminAuth();
+      
+      // Clear any additional tokens or session data
+      const authKeys = ['accessToken', 'refreshToken', 'authToken', 'sessionToken'];
+      authKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Clear search history on admin logout as well
+      localStorage.removeItem('searchHistory');
+      localStorage.removeItem('searchLocation');
+      
+      // Redirect to home page
+      window.location.href = '/';
     }
   };
 

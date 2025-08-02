@@ -85,7 +85,23 @@ export function useClinicAuth() {
     } catch (error) {
       console.error('Error during logout:', error);
     } finally {
+      // Clear all clinic and authentication-related data
       clearClinicAuth();
+      
+      // Clear any additional tokens or session data
+      const authKeys = ['accessToken', 'refreshToken', 'authToken', 'sessionToken'];
+      authKeys.forEach(key => {
+        if (localStorage.getItem(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Clear search history as well on clinic logout
+      localStorage.removeItem('searchHistory');
+      localStorage.removeItem('searchLocation');
+      
+      // Redirect to home page
+      window.location.href = '/';
     }
   };
 
