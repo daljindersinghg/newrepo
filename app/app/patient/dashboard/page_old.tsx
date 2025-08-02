@@ -48,6 +48,12 @@ export default function PatientDashboard() {
     }
   }, [isAuthenticated, authLoading]);
 
+  const handleAppointmentUpdate = (updatedAppointment: Appointment) => {
+    setAppointments(prev => 
+      prev.map(apt => apt._id === updatedAppointment._id ? updatedAppointment : apt)
+    );
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -91,7 +97,7 @@ export default function PatientDashboard() {
       />
 
       {/* Mobile-First Dashboard */}
-      <div className="px-4 py-6 max-w-4xl mx-auto">
+      <div className="px-4 py-6">
         {/* Welcome Section */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -142,94 +148,83 @@ export default function PatientDashboard() {
           </Link>
         </div>
 
-        {/* Appointments Section */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Your Appointments</h2>
-              <Link 
-                href="/patient/appointments" 
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+        {/* Recent Appointments */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Recent Appointments</h2>
+            <Link href="/patient/appointments" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+              View All
+            </Link>
+          </div>
+          
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+              <span className="ml-2 text-gray-600 text-sm">Loading...</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-700 text-sm">{error}</p>
+              <button
+                type="button"
+                onClick={fetchAppointments}
+                className="mt-2 bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
               >
-                View All
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && recentAppointments.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v8a3 3 0 01-3 3H6a3 3 0 01-3-3V8a1 1 0 011-1h3z" />
+                </svg>
+              </div>
+              <p className="text-gray-600 text-sm mb-4">No appointments yet</p>
+              <Link
+                href="/"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                Book Your First Appointment
               </Link>
             </div>
-          </div>
+          )}
 
-          <div className="p-4">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-              </div>
-            ) : error ? (
-              <div className="text-center py-8">
-                <div className="text-red-500 mb-2">{error}</div>
-                <button 
-                  onClick={fetchAppointments}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  Try Again
-                </button>
-              </div>
-            ) : recentAppointments.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-gray-400 text-4xl mb-3">🦷</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments yet</h3>
-                <p className="text-gray-600 mb-4 text-sm">
-                  Start by finding and booking with verified dentists near you
-                </p>
-                <Link 
-                  href="/" 
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Find Dentists
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentAppointments.map((appointment) => (
-                  <div key={appointment._id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 truncate">
-                          {appointment.clinic.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {appointment.type} • {format(new Date(appointment.originalRequest.requestedDate), 'MMM d, yyyy')}
-                        </p>
-                        {appointment.originalRequest.requestedTime && (
-                          <p className="text-sm text-gray-500">
-                            Preferred: {appointment.originalRequest.requestedTime}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex-shrink-0">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          appointment.status === 'counter-offered' ? 'bg-blue-100 text-blue-800' :
-                          appointment.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {appointment.status.replace('-', ' ')}
-                        </span>
+          {!loading && !error && recentAppointments.length > 0 && (
+            <div className="space-y-3">
+              {recentAppointments.map((appointment) => (
+                <div key={appointment._id} className="border border-gray-100 rounded-lg p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 text-sm truncate">{appointment.clinic.name}</h3>
+                      <p className="text-xs text-gray-600 mt-1">{appointment.clinic.address}</p>
+                      <div className="mt-2 flex items-center space-x-3 text-xs text-gray-500">
+                        <span>{format(new Date(appointment.originalRequest.requestedDate), 'MMM d')}</span>
+                        <span>{appointment.originalRequest.requestedTime}</span>
                       </div>
                     </div>
-                    
-                    {appointment.type === 'emergency' && (
-                      <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 mb-2">
-                        🚨 Emergency
-                      </div>
-                    )}
-                    
-                    <div className="text-xs text-gray-500">
-                      Updated {format(new Date(appointment.lastActivityAt), 'MMM d, h:mm a')}
-                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-2 ${
+                      appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      appointment.status === 'counter-offered' ? 'bg-blue-100 text-blue-800' :
+                      appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                      appointment.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {appointment.status === 'pending' ? 'Pending' :
+                       appointment.status === 'counter-offered' ? 'Needs Response' :
+                       appointment.status === 'confirmed' ? 'Confirmed' :
+                       appointment.status === 'rejected' ? 'Declined' :
+                       appointment.status}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

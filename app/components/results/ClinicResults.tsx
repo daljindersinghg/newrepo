@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react';
 import { useSimpleTracking } from '../AnalyticsProvider';
 import { Button } from '@/components/ui/button';
 import { ClinicCard } from './ClinicCard';
-import { MapView } from './MapView';
 import { clinicApi, ClinicSearchFilters } from '@/lib/api/clinic';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
+import { SharedHeader } from '@/components/shared/SharedHeader';
 
 interface Clinic {
   _id: string;
@@ -86,9 +86,9 @@ export function ClinicResults() {
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'name' | 'relevance'>('distance');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('');
   const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
-  const [showMap, setShowMap] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   
   const { track } = useSimpleTracking();
   const { showAuthModal } = useAuth();
@@ -288,45 +288,105 @@ export function ClinicResults() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Dentists Near You
-              </h1>
-              {location && (
-                <p className="text-gray-600 mt-1">
-                  📍 {location.address}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Toggle Map View */}
-              <Button 
-                variant="outline" 
-                onClick={() => setShowMap(!showMap)}
-                className="flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 13l-6-3" />
+      {/* Uniform Header */}
+      <SharedHeader 
+        showDentistLogin={true} 
+        showPatientAuth={true}
+        className="sticky top-0 z-50" 
+      />
+
+      {/* Mobile-First Results Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-4 py-4">
+          {/* Location Info */}
+          <div className="mb-4">
+            {location && (
+              <div className="flex items-center text-sm text-gray-600 mb-2">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {showMap ? 'Hide Map' : 'Show Map'}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleReturnToSearch}
-                className="flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                New Search
-              </Button>
-            </div>
+                {location.address}
+              </div>
+            )}
+            <h1 className="text-xl font-bold text-gray-900">
+              {clinics.length} Dental Clinic{clinics.length !== 1 ? 's' : ''} Near You
+            </h1>
           </div>
+
+          {/* Mobile Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Sort & Filter Row */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+              {/* Sort Dropdown */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="flex-shrink-0 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="Sort clinics by"
+                title="Sort clinics by"
+              >
+                <option value="distance">📍 Distance</option>
+                <option value="rating">⭐ Rating</option>
+                <option value="name">📝 Name</option>
+                <option value="relevance">🎯 Relevance</option>
+              </select>
+
+              {/* Filter Button */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex-shrink-0 px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+                </svg>
+                Filters
+              </button>
+            </div>
+
+            {/* New Search Button */}
+            <Button
+              onClick={handleReturnToSearch}
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              New Search
+            </Button>
+          </div>
+
+          {/* Filter Panel (Collapsible) */}
+          {showFilters && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Specialty Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Specialty
+                  </label>
+                  <select
+                    value={specialtyFilter}
+                    onChange={(e) => setSpecialtyFilter(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    aria-label="Filter by specialty"
+                    title="Filter by specialty"
+                  >
+                    <option value="">All Specialties</option>
+                    <option value="general">General Dentistry</option>
+                    <option value="orthodontics">Orthodontics</option>
+                    <option value="cosmetic">Cosmetic Dentistry</option>
+                    <option value="oral-surgery">Oral Surgery</option>
+                    <option value="pediatric">Pediatric Dentistry</option>
+                  </select>
+                </div>
+                
+                {/* Additional filters can be added here */}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -375,7 +435,7 @@ export function ClinicResults() {
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="px-4 py-6 max-w-4xl mx-auto">
         {clinics.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🦷</div>
@@ -463,62 +523,42 @@ export function ClinicResults() {
               </div>
             )}
 
-            {/* Two Column Layout */}
-            <div className={`grid gap-6 ${showMap ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
-              
-              {/* Left Column - Clinic List */}
-              <div className="space-y-6 max-h-[85vh] min-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                {clinics.map((clinic, index) => (
-                  <div 
-                    key={clinic._id}
-                    id={`clinic-${clinic._id}`}
-                    className={`transition-all duration-200 ${
-                      selectedClinicId === clinic._id ? 'ring-1 ring-blue-200 ring-opacity-50' : ''
-                    }`}
-                    onMouseEnter={() => handleClinicHover(clinic._id)}
-                    onMouseLeave={() => handleClinicHover(null)}
-                  >
-                    <ClinicCard
-                      clinic={clinic} 
-                      index={index}
-                      userEmail={patientInfo?.email || null}
-                      isHighlighted={selectedClinicId === clinic._id}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Right Column - Map */}
-              {showMap && (
-                <div className="sticky top-4 h-[85vh] min-h-[600px]">
-                  <MapView
-                    clinics={clinics}
-                    selectedClinicId={selectedClinicId}
-                    onClinicSelect={handleClinicSelect}
-                    userLocation={location ? { lat: location.lat, lng: location.lng } : undefined}
+            {/* Mobile-First Clinic List */}
+            <div className="space-y-4">
+              {clinics.map((clinic, index) => (
+                <div 
+                  key={clinic._id}
+                  id={`clinic-${clinic._id}`}
+                  className="transition-all duration-200"
+                >
+                  <ClinicCard
+                    clinic={clinic} 
+                    index={index}
+                    userEmail={patientInfo?.email || null}
+                    isHighlighted={selectedClinicId === clinic._id}
                   />
                 </div>
-              )}
+              ))}
             </div>
 
             {/* Bottom CTA */}
             {clinics.length > 0 && (
-              <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 text-center">
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 text-center">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
                   Ready to Book Your Appointment?
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-4 text-sm">
                   Get your $50 gift card after your first visit through our platform
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
                   <div className="flex items-center text-green-600">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     Instant booking
                   </div>
                   <div className="flex items-center text-green-600">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     $50 reward guaranteed
