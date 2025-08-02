@@ -18,6 +18,8 @@ export const geocodeAddress = async (address: string): Promise<GeocodeResult> =>
       params: {
         address,
         key: apiKey,
+        region: 'ca',  // Restrict results to Canada
+        components: 'country:CA'  // Only return results from Canada
       },
     });
 
