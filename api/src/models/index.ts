@@ -5,3 +5,4 @@ export { default as Admin, IAdmin } from './Admin';
 export { default as Clinic, IClinic } from './Clinic';
 export { Appointment, IAppointment } from './Appointment';
 export { Notification, INotification } from './Notification';
+export { default as Receipt, IReceipt } from './receipt.model';

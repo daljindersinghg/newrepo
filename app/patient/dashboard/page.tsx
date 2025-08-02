@@ -5,6 +5,7 @@ import { PatientDashboardLayout } from '@/components/patient/PatientDashboardLay
 import { OverviewTab } from '@/components/patient/OverviewTab';
 import { AppointmentsTab } from '@/components/patient/AppointmentsTab';
 import { FindClinicsTab } from '@/components/patient/FindClinicsTab';
+import { ReceiptsTab } from '@/components/patient/ReceiptsTab';
 
 export default function PatientDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -17,6 +18,8 @@ export default function PatientDashboard() {
         return <AppointmentsTab />;
       case 'find-clinics':
         return <FindClinicsTab />;
+      case 'receipts':
+        return <ReceiptsTab />;
       default:
         return <OverviewTab />;
     }

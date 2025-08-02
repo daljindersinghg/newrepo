@@ -28,6 +28,21 @@ interface Appointment {
     reason: string;
     requestedAt: string;
   };
+  clinicResponses: Array<{
+    responseType: 'counter-offer' | 'confirmation' | 'rejection';
+    proposedDate?: string;
+    proposedTime?: string;
+    proposedDuration?: number;
+    message: string;
+    respondedAt: string;
+    _id: string;
+  }>;
+  patientResponses: Array<{
+    responseType: 'accept' | 'reject' | 'counter';
+    message?: string;
+    respondedAt: string;
+    _id: string;
+  }>;
   messages: Array<{
     sender: 'patient' | 'clinic' | 'admin';
     senderId: string;
@@ -64,6 +79,7 @@ export function BookingsManagement() {
   const [showCommunication, setShowCommunication] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchAppointments = async () => {
     try {
@@ -96,6 +112,17 @@ export function BookingsManagement() {
       }
     } catch (error: any) {
       console.error('Failed to fetch appointment stats:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await Promise.all([fetchAppointments(), fetchStats()]);
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -241,7 +268,7 @@ export function BookingsManagement() {
 
       {/* Search and Filters */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="flex-1">
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
               Search Appointments
@@ -261,6 +288,7 @@ export function BookingsManagement() {
             </label>
             <select
               id="filter"
+              title="Filter appointments by status"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -273,6 +301,33 @@ export function BookingsManagement() {
               <option value="rejected">Rejected</option>
               <option value="counter-offered">Counter Offered</option>
             </select>
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              title="Refresh appointments and statistics"
+              className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
+                refreshing
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
+              }`}
+            >
+              {refreshing ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                  <span>Refreshing...</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Refresh</span>
+                </div>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -355,6 +410,7 @@ export function BookingsManagement() {
                         <select
                           value={appointment.status}
                           onChange={(e) => handleStatusUpdate(appointment._id, e.target.value)}
+                          title="Change appointment status"
                           className="text-xs border border-gray-300 rounded px-1 py-1"
                         >
                           <option value="pending">Pending</option>
@@ -369,7 +425,10 @@ export function BookingsManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <div className="text-gray-900">
-                          {appointment.messages.length} messages
+                          {appointment.messages.length + appointment.clinicResponses.length + appointment.patientResponses.length + 1} interactions
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {appointment.clinicResponses.length} clinic • {appointment.patientResponses.length} patient • {appointment.messages.length} messages
                         </div>
                         <button
                           type="button"
@@ -377,9 +436,9 @@ export function BookingsManagement() {
                             setSelectedAppointment(appointment);
                             setShowCommunication(true);
                           }}
-                          className="text-blue-600 hover:text-blue-800 text-xs underline"
+                          className="text-blue-600 hover:text-blue-800 text-xs underline mt-1"
                         >
-                          View Communication
+                          View Full Communication
                         </button>
                       </div>
                     </td>
@@ -469,6 +528,7 @@ export function BookingsManagement() {
                 <button
                   type="button"
                   onClick={() => setShowCommunication(false)}
+                  title="Close communication modal"
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -479,34 +539,150 @@ export function BookingsManagement() {
             </div>
             
             <div className="p-6 max-h-96 overflow-y-auto">
-              {selectedAppointment.messages.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No messages yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {selectedAppointment.messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`p-3 rounded-lg ${
-                        message.sender === 'admin'
-                          ? 'bg-blue-100 ml-8'
-                          : message.sender === 'patient'
-                          ? 'bg-gray-100 mr-8'
-                          : 'bg-green-100 mr-8'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs font-medium text-gray-600 capitalize">
-                          {message.sender}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(message.sentAt)}
-                        </span>
-                      </div>
-                      <p className="text-sm mt-1">{message.message}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                // Create a chronological timeline of all communications
+                const allCommunications = [];
+                
+                // Add original request
+                allCommunications.push({
+                  type: 'original-request',
+                  timestamp: selectedAppointment.originalRequest.requestedAt,
+                  data: selectedAppointment.originalRequest
+                });
+                
+                // Add clinic responses
+                selectedAppointment.clinicResponses.forEach(response => {
+                  allCommunications.push({
+                    type: 'clinic-response',
+                    timestamp: response.respondedAt,
+                    data: response
+                  });
+                });
+                
+                // Add patient responses
+                selectedAppointment.patientResponses.forEach(response => {
+                  allCommunications.push({
+                    type: 'patient-response',
+                    timestamp: response.respondedAt,
+                    data: response
+                  });
+                });
+                
+                // Add messages
+                selectedAppointment.messages.forEach(message => {
+                  allCommunications.push({
+                    type: 'message',
+                    timestamp: message.sentAt,
+                    data: message
+                  });
+                });
+                
+                // Sort by timestamp
+                allCommunications.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                
+                return allCommunications.length === 1 ? (
+                  <p className="text-gray-500 text-center py-8">Only the original request - no responses yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {allCommunications.map((comm, index) => {
+                      if (comm.type === 'original-request') {
+                        const req = comm.data as typeof selectedAppointment.originalRequest;
+                        return (
+                          <div key={index} className="p-3 rounded-lg bg-yellow-50 border-l-4 border-yellow-400">
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-medium text-yellow-700">
+                                Original Request
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDate(req.requestedAt)}
+                              </span>
+                            </div>
+                            <div className="mt-2 text-sm">
+                              <p><strong>Date:</strong> {formatDate(req.requestedDate)}</p>
+                              <p><strong>Time:</strong> {req.requestedTime}</p>
+                              <p><strong>Duration:</strong> {req.duration} minutes</p>
+                              <p><strong>Reason:</strong> {req.reason}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (comm.type === 'clinic-response') {
+                        const response = comm.data as typeof selectedAppointment.clinicResponses[0];
+                        return (
+                          <div key={index} className="p-3 rounded-lg bg-green-50 border-l-4 border-green-400 mr-8">
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-medium text-green-700">
+                                Clinic {response.responseType === 'counter-offer' ? 'Counter Offer' : response.responseType}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDate(response.respondedAt)}
+                              </span>
+                            </div>
+                            <div className="mt-2 text-sm">
+                              {response.responseType === 'counter-offer' && (
+                                <div className="mb-2">
+                                  <p><strong>Proposed Date:</strong> {response.proposedDate ? formatDate(response.proposedDate) : 'Same as requested'}</p>
+                                  <p><strong>Proposed Time:</strong> {response.proposedTime || 'Same as requested'}</p>
+                                  <p><strong>Duration:</strong> {response.proposedDuration || selectedAppointment.duration} minutes</p>
+                                </div>
+                              )}
+                              <p className="italic">"{response.message}"</p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (comm.type === 'patient-response') {
+                        const response = comm.data as typeof selectedAppointment.patientResponses[0];
+                        return (
+                          <div key={index} className="p-3 rounded-lg bg-purple-50 border-l-4 border-purple-400 ml-8">
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-medium text-purple-700">
+                                Patient {response.responseType === 'accept' ? 'Accepted' : response.responseType === 'reject' ? 'Rejected' : 'Counter Offer'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDate(response.respondedAt)}
+                              </span>
+                            </div>
+                            {response.message && (
+                              <p className="text-sm mt-2 italic">"{response.message}"</p>
+                            )}
+                          </div>
+                        );
+                      }
+                      
+                      if (comm.type === 'message') {
+                        const message = comm.data as typeof selectedAppointment.messages[0];
+                        return (
+                          <div
+                            key={index}
+                            className={`p-3 rounded-lg ${
+                              message.sender === 'admin'
+                                ? 'bg-blue-100 ml-8 border-l-4 border-blue-400'
+                                : message.sender === 'patient'
+                                ? 'bg-gray-100 mr-8 border-l-4 border-gray-400'
+                                : 'bg-green-100 mr-8 border-l-4 border-green-400'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className="text-xs font-medium text-gray-600 capitalize">
+                                {message.sender} Message
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDate(message.sentAt)}
+                              </span>
+                            </div>
+                            <p className="text-sm mt-1">"{message.message}"</p>
+                          </div>
+                        );
+                      }
+                      
+                      return null;
+                    })}
+                  </div>
+                );
+              })()}
             </div>
             
             <div className="p-6 border-t">
@@ -517,7 +693,7 @@ export function BookingsManagement() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type your message..."
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
                 <button
                   type="button"

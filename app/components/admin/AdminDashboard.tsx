@@ -12,12 +12,15 @@ import { ClinicAuthManagement } from './ClinicAuthManagement';
 import { AdminAnalyticsDashboard } from './AdminAnalyticsDashboard';
 import { PatientsManagement } from './UsersManagement';
 import { BookingsManagement } from './BookingsManagement';
+import { NotificationManager } from './NotificationManager';
+import { ReceiptManagement } from './ReceiptManagement';
 
-type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics' | 'patients' | 'bookings';
+type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics' | 'patients' | 'bookings' | 'notifications' | 'receipts';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [patientStats, setPatientStats] = useState<{ total: number; withBookings: number } | null>(null);
   const { admin, isLoggedIn, logout, loading, refreshAuth } = useAdminAuth();
 
@@ -95,6 +98,16 @@ export function AdminDashboard() {
       label: 'Clinic Authentication',
       icon: '🔐'
     },
+    {
+      id: 'notifications' as TabType,
+      label: 'Notifications',
+      icon: '🔔'
+    },
+    {
+      id: 'receipts' as TabType,
+      label: 'Receipts',
+      icon: '📄'
+    },
   ];
 
   const renderContent = () => {
@@ -111,6 +124,10 @@ export function AdminDashboard() {
         return <ViewClinics />;
       case 'clinic-auth':
         return <ClinicAuthManagement />;
+      case 'notifications':
+        return <NotificationManager />;
+      case 'receipts':
+        return <ReceiptManagement />;
       default:
         return <AdminAnalyticsDashboard />;
     }
@@ -128,25 +145,50 @@ export function AdminDashboard() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 bg-white shadow-lg transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        sidebarCollapsed ? "lg:w-16 w-16" : "w-64",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 bg-blue-600">
           <div className="flex items-center">
-            <span className="text-xl font-bold text-white">Admin Panel</span>
+            {!sidebarCollapsed && (
+              <span className="text-xl font-bold text-white">Admin Panel</span>
+            )}
+            {sidebarCollapsed && (
+              <span className="text-xl font-bold text-white">AP</span>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-white hover:bg-blue-700 p-1 rounded"
-            title="Close sidebar"
-            aria-label="Close sidebar"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Collapse Toggle (Desktop only) */}
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="hidden lg:block text-white hover:bg-blue-700 p-1 rounded"
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {sidebarCollapsed ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                )}
+              </svg>
+            </button>
+            {/* Close Button (Mobile only) */}
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-white hover:bg-blue-700 p-1 rounded"
+              title="Close sidebar"
+              aria-label="Close sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -158,14 +200,26 @@ export function AdminDashboard() {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors",
+                    "w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors relative group",
                     activeTab === tab.id
                       ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
                       : "text-gray-700 hover:bg-gray-100"
                   )}
+                  title={sidebarCollapsed ? tab.label : undefined}
                 >
-                  <span className="mr-3 text-xl">{tab.icon}</span>
-                  <span className="font-medium">{tab.label}</span>
+                  <span className={cn("text-xl", sidebarCollapsed ? "mx-auto" : "mr-3")}>
+                    {tab.icon}
+                  </span>
+                  {!sidebarCollapsed && (
+                    <span className="font-medium">{tab.label}</span>
+                  )}
+                  
+                  {/* Tooltip for collapsed state */}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                      {tab.label}
+                    </div>
+                  )}
                 </button>
               </li>
             ))}
@@ -175,28 +229,51 @@ export function AdminDashboard() {
         {/* Admin Profile */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {admin?.name?.charAt(0)?.toUpperCase() || 'A'}
-                </span>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-medium text-sm">
+                      {admin?.name?.charAt(0)?.toUpperCase() || 'A'}
+                    </span>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-medium text-gray-900">{admin?.name || 'Admin'}</p>
+                    <p className="text-xs text-gray-500">{admin?.roles?.join(', ') || 'Administrator'}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                  title="Logout"
+                  aria-label="Logout"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center space-y-2 w-full">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-xs">
+                    {admin?.name?.charAt(0)?.toUpperCase() || 'A'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                  title="Logout"
+                  aria-label="Logout"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
               </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-900">{admin?.name || 'Admin'}</p>
-                <p className="text-xs text-gray-500">{admin?.roles?.join(', ') || 'Administrator'}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="text-gray-400 hover:text-gray-600 p-1"
-              title="Logout"
-              aria-label="Logout"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
+            )}
           </div>
         </div>
       </div>
@@ -218,6 +295,24 @@ export function AdminDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
+              
+              {/* Collapse toggle for desktop */}
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="hidden lg:block text-gray-500 hover:text-gray-700 mr-4"
+                title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {sidebarCollapsed ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
+                  )}
+                </svg>
+              </button>
+              
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900">
                   {tabs.find(tab => tab.id === activeTab)?.label}

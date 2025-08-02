@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay, isSameDay, setHours, setMinutes } from 'date-fns';
 import { appointmentApi, AppointmentRequest } from '@/lib/api/appointments';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
+import { useRouter } from 'next/navigation';
 
 interface TimeSlotRequestPickerProps {
   clinicId: string;
@@ -21,12 +22,26 @@ export default function TimeSlotRequestPicker({
   onSuccess
 }: TimeSlotRequestPickerProps) {
   const { patientInfo } = usePatientAuth();
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()));
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
   const [reason, setReason] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
+
+  // Countdown effect for redirect
+  useEffect(() => {
+    if (success && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (success && countdown === 0) {
+      router.push('/patient/dashboard');
+    }
+  }, [success, countdown, router]);
 
   const getNext7Days = () => {
     const days = [];
@@ -90,13 +105,10 @@ export default function TimeSlotRequestPicker({
         setReason('');
         onSlotSelect(null);
         setSelectedTime('09:00');
+        setCountdown(5); // Start countdown for redirect
         
-        // Close modal after a short delay to show success message
-        if (onSuccess) {
-          setTimeout(() => {
-            onSuccess();
-          }, 2000);
-        }
+        // Remove the auto-close behavior
+        // onSuccess callback is no longer called automatically
       } else {
         throw new Error(result.message || 'Failed to submit appointment request');
       }
@@ -118,19 +130,28 @@ export default function TimeSlotRequestPicker({
           </svg>
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">Request Submitted!</h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-4">
           Your appointment request has been sent to the clinic. They will review and respond soon.
         </p>
+        <div className="mb-6">
+          <p className="text-sm text-gray-500">
+            Redirecting to your dashboard in <span className="font-semibold text-blue-600">{countdown}</span> seconds...
+          </p>
+        </div>
         <div className="flex gap-3 justify-center">
-          <a
-            href="/patient/dashboard" 
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-decoration-none"
-          >
-            Go to Dashboard
-          </a>
           <button
             type="button"
-            onClick={() => setSuccess(false)}
+            onClick={() => router.push('/patient/dashboard')}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Dashboard Now
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSuccess(false);
+              setCountdown(5);
+            }}
             className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
           >
             Make Another Request

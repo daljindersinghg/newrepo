@@ -37,7 +37,7 @@ export default function BookingFlow({ clinicId, clinicName, onClose }: BookingFl
           
           <button
             type="button"
-            onClick={() => showAuthModal('login')}
+            onClick={() => showAuthModal('signup')}
             className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Sign Up / Log In

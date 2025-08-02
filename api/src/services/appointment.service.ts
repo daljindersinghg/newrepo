@@ -213,6 +213,11 @@ export class AppointmentService {
       }
 
       await appointment.save();
+      await appointment.populate(['patient', 'clinic']);
+      
+      // Send browser notifications for status change
+      const { NotificationService } = await import('./notification.service');
+      await NotificationService.notifyStatusChangeBrowser(appointment, appointment.patient, appointment.clinic);
 
       logger.info(`Appointment ${appointmentId} status updated to ${status}`);
 
@@ -355,6 +360,10 @@ export class AppointmentService {
       await appointment.save();
       await appointment.populate(['patient', 'clinic']);
       
+      // Send browser notifications for new booking
+      const { NotificationService } = await import('./notification.service');
+      await NotificationService.notifyNewBookingBrowser(appointment, appointment.patient, appointment.clinic);
+      
       logger.info(`Appointment request created: ${appointment._id}`);
       return appointment;
     } catch (error: any) {
@@ -416,6 +425,10 @@ export class AppointmentService {
       await appointment.save();
       await appointment.populate(['patient', 'clinic']);
       
+      // Send browser notifications for clinic response
+      const { NotificationService } = await import('./notification.service');
+      await NotificationService.notifyPatientResponseBrowser(appointment, appointment.patient, appointment.clinic);
+      
       logger.info(`Clinic response added to appointment ${appointmentId}: ${responseData.responseType}`);
       return appointment;
     } catch (error: any) {
@@ -465,6 +478,10 @@ export class AppointmentService {
 
       await appointment.save();
       await appointment.populate(['patient', 'clinic']);
+      
+      // Send browser notifications for patient response
+      const { NotificationService } = await import('./notification.service');
+      await NotificationService.notifyPatientResponseBrowser(appointment, appointment.patient, appointment.clinic);
       
       logger.info(`Patient response added to appointment ${appointmentId}: ${responseData.responseType}`);
       return appointment;

@@ -8,6 +8,7 @@ import publicRouter from "./public.router";
 import clinicRouter from "./clinic.router";
 import notificationRouter from "./notification.router";
 import appointmentRouter from "./appointment.router"; // Add this import
+import receiptRouter from "./receipt.router";
 
 const v1Router = express.Router();
 
@@ -36,5 +37,8 @@ v1Router.use("/notifications", notificationRouter);
 
 // Appointment endpoints
 v1Router.use("/appointments", appointmentRouter);
+
+// Receipt endpoints (for patients)
+v1Router.use("/receipts", receiptRouter);
 
 export default v1Router;
