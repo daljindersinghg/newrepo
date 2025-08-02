@@ -3,7 +3,6 @@
 import { useClinicAuth } from '@/hooks/useClinicAuth';
 import { ClinicDashboardLayout } from '@/components/clinic/ClinicDashboardLayout';
 import { ClinicLogin } from '@/components/clinic/ClinicLogin';
-import { NotificationProvider } from '@/contexts/NotificationContext';
 
 export default function ClinicDashboard() {
   const { isLoggedIn, loading, refreshAuth } = useClinicAuth();
@@ -30,9 +29,5 @@ export default function ClinicDashboard() {
   }
 
   // Show dashboard if authenticated
-  return (
-    <NotificationProvider>
-      <ClinicDashboardLayout />
-    </NotificationProvider>
-  );
+  return <ClinicDashboardLayout />;
 }

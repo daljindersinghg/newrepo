@@ -9,7 +9,7 @@ import { ClinicPendingTab } from './ClinicPendingTab';
 import { ClinicCalendarTab } from './ClinicCalendarTab';
 import { ClinicPatientsTab } from './ClinicPatientsTab';
 import { ClinicSettingsTab } from './ClinicSettingsTab';
-import { NotificationDropdown } from './NotificationDropdown';
+import { SimpleNotificationDropdown } from './SimpleNotificationDropdown';
 
 type ClinicTab = 'overview' | 'appointments' | 'pending' | 'calendar' | 'patients' | 'settings';
 
@@ -109,7 +109,7 @@ export function ClinicDashboardLayout() {
             
             <div className="flex items-center space-x-4">
               {/* Notification Dropdown */}
-              <NotificationDropdown />
+              <SimpleNotificationDropdown />
               
               {/* Help */}
               <button 

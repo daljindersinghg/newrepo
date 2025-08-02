@@ -1,14 +1,116 @@
 'use client';
 
-import { NotificationSettings } from './NotificationSettings';
+import { useState } from 'react';
 
 export function ClinicSettingsTab() {
+  const [browserNotifications, setBrowserNotifications] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [appointmentAlerts, setAppointmentAlerts] = useState(true);
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        setBrowserNotifications(true);
+        new Notification('Notifications Enabled', {
+          body: 'You will now receive browser notifications for new appointments.',
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Notification Settings */}
-      <NotificationSettings />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Notification Settings</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Manage how you receive notifications about appointments.
+          </p>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Browser Notifications */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900">Browser Notifications</h4>
+              <p className="text-sm text-gray-600">Get desktop notifications for new appointments</p>
+            </div>
+            <button
+              onClick={requestNotificationPermission}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                browserNotifications ? 'bg-green-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  browserNotifications ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Email Notifications */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900">Email Notifications</h4>
+              <p className="text-sm text-gray-600">Receive email alerts for important updates</p>
+            </div>
+            <button
+              onClick={() => setEmailNotifications(!emailNotifications)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                emailNotifications ? 'bg-green-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  emailNotifications ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Appointment Alerts */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900">Appointment Alerts</h4>
+              <p className="text-sm text-gray-600">Get notified about new appointment requests</p>
+            </div>
+            <button
+              onClick={() => setAppointmentAlerts(!appointmentAlerts)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                appointmentAlerts ? 'bg-green-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  appointmentAlerts ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Browser Permission Status */}
+          {typeof window !== 'undefined' && 'Notification' in window && (
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm font-medium text-blue-900">
+                Browser Notifications: {
+                  Notification.permission === 'granted' ? 'Enabled' : 
+                  Notification.permission === 'denied' ? 'Blocked' : 'Not Enabled'
+                }
+              </p>
+              {Notification.permission === 'denied' && (
+                <p className="text-xs text-blue-700 mt-1">
+                  To enable, please check your browser settings and allow notifications for this site.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
       
-      {/* Other Settings Placeholder */}
+      {/* General Settings */}
       <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
         <div className="text-center py-8">
