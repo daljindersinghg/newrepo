@@ -1,7 +1,6 @@
 // api/src/controllers/analytics.controller.ts
 import { Request, Response, NextFunction } from 'express';
 import logger from '../config/logger.config';
-import { posthog } from '../posthog';
 
 export class AnalyticsController {
   /**
