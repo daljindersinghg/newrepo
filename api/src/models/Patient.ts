@@ -22,8 +22,7 @@ export interface IPatient extends Document {
   signupStep: 1 | 2 | 'completed';
   signupCompletedAt?: Date;
 
-  // Status
-  isActive: boolean;
+
 
   // Audit
   createdAt: Date;
@@ -95,11 +94,7 @@ const PatientSchema: Schema = new Schema({
     type: Date
   },
 
-  // Status
-  isActive: {
-    type: Boolean,
-    default: true
-  },
+
 
   // Audit
   createdAt: { 
@@ -115,7 +110,7 @@ const PatientSchema: Schema = new Schema({
 // Indexes
 PatientSchema.index({ email: 1 }, { unique: true });
 PatientSchema.index({ phone: 1 });
-PatientSchema.index({ isActive: 1 });
+
 PatientSchema.index({ signupStep: 1 });
 PatientSchema.index({ createdAt: -1 });
 
@@ -179,10 +174,7 @@ PatientSchema.methods.isOTPValid = function(otp: string): boolean {
   return hashedOTP === this.emailOTP;
 };
 
-// Static method to find active patients
-PatientSchema.statics.findActive = function() {
-  return this.find({ isActive: true });
-};
+
 
 // Static method to get signup statistics
 PatientSchema.statics.getSignupStats = function() {

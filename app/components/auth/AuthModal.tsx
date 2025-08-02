@@ -18,52 +18,56 @@ export function AuthModal() {
   if (!authModal.isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-md p-4">
-      <div className="bg-white/95 backdrop-blur-xl rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto relative shadow-2xl border border-white/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto relative shadow-xl border border-gray-200">
         {/* Close Button */}
         <button
           onClick={hideAuthModal}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10 p-2 rounded-full hover:bg-gray-100 transition-colors"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
         {/* Header */}
-        <div className="text-center p-6 border-b border-gray-200/50">
-          <div className="mx-auto h-12 w-auto flex items-center justify-center mb-4">
-            <h1 className="text-2xl font-bold text-blue-600">DentalCare+</h1>
+        <div className="text-center p-8 border-b border-gray-100">
+          <div className="mx-auto h-16 w-auto flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {currentAction === 'login' ? 'Welcome Back!' : 'Create Your Account'}
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            {currentAction === 'login' ? 'Welcome Back!' : 'Join DentalCare+'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm leading-relaxed">
             {currentAction === 'login' 
-              ? 'Sign in to book your dental appointment' 
-              : 'Join thousands of satisfied patients'
+              ? 'Sign in to manage your appointments and profile' 
+              : 'Create your account to start booking with verified dentists'
             }
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex bg-gray-100/70 m-6 rounded-lg p-1 backdrop-blur-sm">
+        <div className="flex bg-gray-50 mx-8 mt-6 mb-4 rounded-xl p-1">
           <button
             onClick={() => setCurrentAction('login')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
               currentAction === 'login'
-                ? 'bg-white/90 text-blue-600 shadow-sm backdrop-blur-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Sign In
           </button>
           <button
             onClick={() => setCurrentAction('signup')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 ${
               currentAction === 'signup'
-                ? 'bg-white/90 text-blue-600 shadow-sm backdrop-blur-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Sign Up
@@ -71,7 +75,7 @@ export function AuthModal() {
         </div>
 
         {/* Form Content */}
-        <div className="px-6 pb-6">
+        <div className="px-8 pb-6">
           {currentAction === 'login' ? (
             <LoginForm onSwitchToSignup={() => setCurrentAction('signup')} />
           ) : (
@@ -80,26 +84,31 @@ export function AuthModal() {
         </div>
 
         {/* Benefits Reminder */}
-        <div className="bg-blue-50/80 backdrop-blur-sm border-t border-blue-100/50 p-6">
-          <h3 className="text-sm font-semibold text-blue-900 mb-3">Why sign up?</h3>
-          <div className="space-y-2">
-            <div className="flex items-center text-sm text-blue-800">
-              <svg className="w-4 h-4 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-t border-blue-100 p-6">
+          <h3 className="text-sm font-semibold text-blue-900 mb-4 flex items-center">
+            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Member Benefits
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-start text-sm text-blue-800">
+              <svg className="w-4 h-4 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              Get $50 gift card after your first appointment
+              <span className="font-medium">$50 gift card</span> after your first appointment
             </div>
-            <div className="flex items-center text-sm text-blue-800">
-              <svg className="w-4 h-4 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex items-start text-sm text-blue-800">
+              <svg className="w-4 h-4 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              Instant booking with verified dentists
+              <span className="font-medium">Instant booking</span> with verified dentists
             </div>
-            <div className="flex items-center text-sm text-blue-800">
-              <svg className="w-4 h-4 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex items-start text-sm text-blue-800">
+              <svg className="w-4 h-4 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              Manage all your appointments in one place
+              <span className="font-medium">Manage appointments</span> all in one place
             </div>
           </div>
         </div>

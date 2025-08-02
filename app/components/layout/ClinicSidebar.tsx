@@ -1,5 +1,7 @@
 'use client';
 
+import { useClinicAuth } from '@/hooks/useClinicAuth';
+
 type ClinicTab = 'overview' | 'appointments' | 'pending' | 'calendar' | 'patients' | 'settings';
 
 interface ClinicSidebarProps {
@@ -17,6 +19,7 @@ interface NavItem {
 }
 
 export function ClinicSidebar({ activeTab, onTabChange, isOpen, onClose }: ClinicSidebarProps) {
+  const { clinic, logout } = useClinicAuth();
   const navItems: NavItem[] = [
     {
       id: 'overview',
@@ -89,8 +92,11 @@ export function ClinicSidebar({ activeTab, onTabChange, isOpen, onClose }: Clini
           <span className="text-xl font-bold text-white">Clinic Portal</span>
         </div>
         <button
+          type="button"
           onClick={onClose}
           className="lg:hidden text-white hover:bg-green-700 p-1 rounded"
+          aria-label="Close sidebar"
+          title="Close sidebar"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -104,12 +110,14 @@ export function ClinicSidebar({ activeTab, onTabChange, isOpen, onClose }: Clini
           {navItems.map((item) => (
             <li key={item.id}>
               <button
+                type="button"
                 onClick={() => onTabChange(item.id)}
                 className={`w-full flex items-center px-3 py-3 text-left rounded-lg transition-colors group ${
                   activeTab === item.id
                     ? 'bg-green-50 text-green-700 border-l-4 border-green-500'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 }`}
+                aria-current={activeTab === item.id ? 'page' : undefined}
               >
                 <span className={`mr-3 ${
                   activeTab === item.id ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'
@@ -132,13 +140,25 @@ export function ClinicSidebar({ activeTab, onTabChange, isOpen, onClose }: Clini
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-medium text-sm">DC</span>
+            <span className="text-white font-medium text-sm">
+              {clinic?.name ? clinic.name.charAt(0).toUpperCase() : 'C'}
+            </span>
           </div>
           <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-gray-900">Dental Clinic</p>
-            <p className="text-xs text-gray-500">Main Street, City</p>
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {clinic?.name || 'Clinic'}
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              {clinic?.email || 'clinic@example.com'}
+            </p>
           </div>
-          <button className="text-gray-400 hover:text-gray-600">
+          <button 
+            type="button"
+            onClick={logout}
+            className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
+            title="Logout"
+            aria-label="Logout from clinic dashboard"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>

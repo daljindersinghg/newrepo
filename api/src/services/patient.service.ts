@@ -182,6 +182,8 @@ export class PatientService {
       patient.otpExpires = undefined;
       patient.otpAttempts = undefined;
 
+
+
       // Add optional insurance data
       if (insuranceProvider) {
         patient.insuranceProvider = insuranceProvider.trim();
@@ -291,7 +293,7 @@ export class PatientService {
       const patient = await Patient.findOne({ 
         email, 
         isEmailVerified: true,
-        isActive: true
+
       });
 
       if (!patient) {
@@ -351,7 +353,7 @@ export class PatientService {
       const patient = await Patient.findOne({ 
         email, 
         isEmailVerified: true,
-        isActive: true
+
       }).select('+emailOTP +otpExpires +otpAttempts');
 
       if (!patient) {
