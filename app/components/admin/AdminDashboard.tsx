@@ -11,8 +11,9 @@ import { ViewClinics } from './ViewClinics';
 import { ClinicAuthManagement } from './ClinicAuthManagement';
 import { AdminAnalyticsDashboard } from './AdminAnalyticsDashboard';
 import { PatientsManagement } from './UsersManagement';
+import { BookingsManagement } from './BookingsManagement';
 
-type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics' | 'patients';
+type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics' | 'patients' | 'bookings';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
@@ -75,6 +76,11 @@ export function AdminDashboard() {
       icon: '👥'
     },
     {
+      id: 'bookings' as TabType,
+      label: 'Bookings',
+      icon: '📅'
+    },
+    {
       id: 'add-clinic' as TabType,
       label: 'Add Clinic',
       icon: '🏥'
@@ -97,6 +103,8 @@ export function AdminDashboard() {
         return <AdminAnalyticsDashboard />;
       case 'patients':
         return <PatientsManagement />;
+      case 'bookings':
+        return <BookingsManagement />;
       case 'add-clinic':
         return <CreateClinicForm />;
       case 'view-clinics':

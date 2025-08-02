@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminService } from "../services/admin.service";
 import { PatientService } from "../services/user.service";
+import { AppointmentService } from "../services/appointment.service";
+import { EmailService } from "../services/email.service";
 import { IAdmin } from "../models";
 
 export class AdminController {
@@ -224,6 +226,214 @@ export class AdminController {
         success: true,
         message: "Patient statistics retrieved successfully",
         data: stats
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  // Appointment Management Methods
+  static async getAllAppointments(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const status = req.query.status as string;
+      const search = req.query.search as string;
+      const clinicId = req.query.clinicId as string;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const result = await AppointmentService.getAllAppointmentsForAdmin(
+        page, 
+        limit, 
+        status, 
+        search, 
+        clinicId, 
+        startDate, 
+        endDate
+      );
+      
+      res.status(200).json({
+        success: true,
+        message: "Appointments retrieved successfully",
+        data: result
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async getAppointmentById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { appointmentId } = req.params;
+      const appointment = await AppointmentService.getAppointmentById(appointmentId);
+      
+      if (!appointment) {
+        res.status(404).json({
+          success: false,
+          message: "Appointment not found"
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Appointment retrieved successfully",
+        data: appointment
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async getAppointmentStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const stats = await AppointmentService.getAdminAppointmentStats();
+      
+      res.status(200).json({
+        success: true,
+        message: "Appointment statistics retrieved successfully",
+        data: stats
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async updateAppointmentStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { appointmentId } = req.params;
+      const { status, notes } = req.body;
+      
+      if (!status) {
+        res.status(400).json({
+          success: false,
+          message: "Status is required"
+        });
+        return;
+      }
+
+      const appointment = await AppointmentService.updateStatus(appointmentId, status, notes);
+      
+      res.status(200).json({
+        success: true,
+        message: `Appointment status updated to ${status} successfully`,
+        data: appointment
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async addAppointmentMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { appointmentId } = req.params;
+      const { message } = req.body;
+      const adminId = req.body.adminId 
+      
+      if (!message) {
+        res.status(400).json({
+          success: false,
+          message: "Message is required"
+        });
+        return;
+      }
+
+      const appointment = await AppointmentService.addAdminMessage(appointmentId, adminId, message);
+      
+      if (!appointment) {
+        res.status(404).json({
+          success: false,
+          message: "Appointment not found"
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Message added successfully",
+        data: appointment
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  static async sendAppointmentReminder(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { appointmentId } = req.params;
+      
+      // Get appointment details with populated patient and clinic info
+      const appointment = await AppointmentService.getAppointmentById(appointmentId);
+      
+      if (!appointment) {
+        res.status(404).json({
+          success: false,
+          message: "Appointment not found"
+        });
+        return;
+      }
+
+      // Check if appointment is in a valid state for reminders
+      if (!['confirmed', 'pending'].includes(appointment.status)) {
+        res.status(400).json({
+          success: false,
+          message: "Reminders can only be sent for confirmed or pending appointments"
+        });
+        return;
+      }
+
+      // Extract patient and clinic info
+      const patient = appointment.patient as any;
+      const clinic = appointment.clinic as any;
+
+      if (!patient?.email) {
+        res.status(400).json({
+          success: false,
+          message: "Patient email not found"
+        });
+        return;
+      }
+
+      // Send reminder email
+      await EmailService.sendAppointmentReminder(
+        patient.email,
+        patient.name || 'Valued Patient',
+        clinic.name || 'Dental Clinic',
+        appointment.appointmentDate,
+        appointment.originalRequest.requestedTime,
+        appointment.duration,
+        appointment.type,
+        clinic.phone,
+        clinic.address
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Appointment reminder sent successfully",
+        data: {
+          sentTo: patient.email,
+          appointmentDate: appointment.appointmentDate,
+          clinic: clinic.name
+        }
       });
     } catch (error: any) {
       res.status(500).json({

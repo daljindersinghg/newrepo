@@ -77,5 +77,55 @@ export const adminApi = {
   async updatePatientStep(patientId: string, signupStep: 1 | 2 | 'completed'): Promise<any> {
     const response = await api.put(`/api/v1/admin/patients/${patientId}/step`, { signupStep });
     return response.data;
+  },
+
+  // Appointment Management
+  async getAllAppointments(
+    page: number = 1, 
+    limit: number = 10, 
+    status?: string, 
+    search?: string, 
+    clinicId?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (status && status !== 'all') params.append('status', status);
+    if (search) params.append('search', search);
+    if (clinicId) params.append('clinicId', clinicId);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const response = await api.get(`/api/v1/admin/appointments?${params.toString()}`);
+    return response.data;
+  },
+
+  async getAppointmentStats(): Promise<any> {
+    const response = await api.get('/api/v1/admin/appointments/stats');
+    return response.data;
+  },
+
+  async getAppointmentById(appointmentId: string): Promise<any> {
+    const response = await api.get(`/api/v1/admin/appointments/${appointmentId}`);
+    return response.data;
+  },
+
+  async updateAppointmentStatus(appointmentId: string, status: string, notes?: string): Promise<any> {
+    const response = await api.put(`/api/v1/admin/appointments/${appointmentId}/status`, { status, notes });
+    return response.data;
+  },
+
+  async addAppointmentMessage(appointmentId: string, message: string, adminId?: string): Promise<any> {
+    const response = await api.post(`/api/v1/admin/appointments/${appointmentId}/message`, { message, adminId });
+    return response.data;
+  },
+
+  async sendAppointmentReminder(appointmentId: string): Promise<any> {
+    const response = await api.post(`/api/v1/admin/appointments/${appointmentId}/reminder`);
+    return response.data;
   }
 };

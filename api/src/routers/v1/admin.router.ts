@@ -49,6 +49,14 @@ adminRouter.get("/patients/stats", AdminController.getPatientStats);
 adminRouter.get("/patients/:patientId", AdminController.getPatientById);
 adminRouter.put("/patients/:patientId/step", AdminController.updatePatientStep);
 
+// Appointment Management endpoints
+adminRouter.get("/appointments", AdminController.getAllAppointments);
+adminRouter.get("/appointments/stats", AdminController.getAppointmentStats);
+adminRouter.get("/appointments/:appointmentId", AdminController.getAppointmentById);
+adminRouter.put("/appointments/:appointmentId/status", AdminController.updateAppointmentStatus);
+adminRouter.post("/appointments/:appointmentId/message", AdminController.addAppointmentMessage);
+adminRouter.post("/appointments/:appointmentId/reminder", AdminController.sendAppointmentReminder);
+
 // ============ PARAMETERIZED ROUTES LAST ============
 // These MUST come AFTER all specific routes
 

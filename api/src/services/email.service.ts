@@ -480,6 +480,177 @@ The ${clinicName} Team
     }
   }
 
+  private static generateAppointmentReminderEmail(
+    patientName: string,
+    clinicName: string,
+    appointmentDate: Date,
+    appointmentTime: string,
+    duration: number,
+    appointmentType: string,
+    clinicPhone?: string,
+    clinicAddress?: string
+  ): EmailTemplate {
+    const formattedDate = format(appointmentDate, 'EEEE, MMMM d, yyyy');
+    const formattedTime = format(new Date(`2000-01-01T${appointmentTime}`), 'h:mm a');
+    const timeUntil = format(appointmentDate, 'EEEE') === format(new Date(), 'EEEE') ? 'today' : 
+                      format(appointmentDate, 'EEEE') === format(new Date(Date.now() + 24*60*60*1000), 'EEEE') ? 'tomorrow' :
+                      `on ${formattedDate}`;
+
+    return {
+      subject: `Appointment Reminder - ${clinicName} ${timeUntil}`,
+      html: `
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background-color: #f59e0b; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                <h1 style="margin: 0; font-size: 24px;">Appointment Reminder 🔔</h1>
+              </div>
+              
+              <div style="background-color: #fef3c7; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #f59e0b;">
+                <p style="margin-top: 0;">Hi ${patientName},</p>
+                
+                <p>This is a friendly reminder about your upcoming appointment with <strong>${clinicName}</strong>.</p>
+                
+                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #f59e0b; margin: 20px 0;">
+                  <h3 style="margin-top: 0; color: #f59e0b;">Appointment Details</h3>
+                  <p><strong>Date:</strong> ${formattedDate}</p>
+                  <p><strong>Time:</strong> ${formattedTime}</p>
+                  <p><strong>Duration:</strong> ${duration} minutes</p>
+                  <p><strong>Type:</strong> ${appointmentType}</p>
+                  <p><strong>Clinic:</strong> ${clinicName}</p>
+                  ${clinicPhone ? `<p><strong>Phone:</strong> ${clinicPhone}</p>` : ''}
+                  ${clinicAddress ? `<p><strong>Address:</strong> ${clinicAddress}</p>` : ''}
+                </div>
+                
+                <div style="background-color: #f59e0b; padding: 15px; border-radius: 8px; color: white; margin: 20px 0;">
+                  <p style="margin: 0;"><strong>Important Reminders:</strong></p>
+                  <ul style="margin: 10px 0 0 20px; padding: 0;">
+                    <li>Please arrive 15 minutes early for check-in</li>
+                    <li>Bring a valid ID and insurance card (if applicable)</li>
+                    <li>If you need to reschedule or cancel, please contact us as soon as possible</li>
+                  </ul>
+                </div>
+                
+                <p>We look forward to seeing you ${timeUntil}!</p>
+                <p>The ${clinicName} Team</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+      text: `
+Appointment Reminder - ${clinicName}
+
+Hi ${patientName},
+
+This is a friendly reminder about your upcoming appointment with ${clinicName}.
+
+Appointment Details:
+- Date: ${formattedDate}
+- Time: ${formattedTime}
+- Duration: ${duration} minutes
+- Type: ${appointmentType}
+- Clinic: ${clinicName}
+${clinicPhone ? `- Phone: ${clinicPhone}` : ''}
+${clinicAddress ? `- Address: ${clinicAddress}` : ''}
+
+Important Reminders:
+- Please arrive 15 minutes early for check-in
+- Bring a valid ID and insurance card (if applicable)
+- If you need to reschedule or cancel, please contact us as soon as possible
+
+We look forward to seeing you ${timeUntil}!
+The ${clinicName} Team
+      `
+    };
+  }
+
+  static async sendAppointmentReminder(
+    patientEmail: string,
+    patientName: string,
+    clinicName: string,
+    appointmentDate: Date,
+    appointmentTime: string,
+    duration: number,
+    appointmentType: string,
+    clinicPhone?: string,
+    clinicAddress?: string
+  ): Promise<void> {
+    try {
+      // Check if email service is configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('⚠️ Email service not configured - skipping appointment reminder email');
+        logger.warn('Email service not configured - skipping appointment reminder email');
+        return;
+      }
+
+      console.log('🔔 [EMAIL SERVICE] Preparing appointment reminder email...');
+      console.log('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.log('🏥 Clinic:', clinicName);
+      console.log('📅 Date:', appointmentDate.toDateString(), '| Time:', appointmentTime);
+      console.log('⏱️ Duration:', duration, 'minutes | Type:', appointmentType);
+
+      logger.info(`🔔 Preparing appointment reminder email:`, {
+        recipient: patientEmail,
+        patientName: patientName,
+        clinic: clinicName,
+        appointmentDate: appointmentDate.toISOString(),
+        appointmentTime,
+        duration,
+        appointmentType
+      });
+
+      const transporter = this.createTransporter();
+      const template = this.generateAppointmentReminderEmail(
+        patientName,
+        clinicName,
+        appointmentDate,
+        appointmentTime,
+        duration,
+        appointmentType,
+        clinicPhone,
+        clinicAddress
+      );
+
+      const mailOptions = {
+        from: `"${clinicName}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+        to: patientEmail,
+        subject: template.subject,
+        text: template.text,
+        html: template.html
+      };
+
+      console.log('📤 Sending reminder email with subject:', template.subject);
+      await transporter.sendMail(mailOptions);
+      
+      console.log('✅ [SUCCESS] APPOINTMENT REMINDER email sent to:', patientEmail);
+      console.log('📧 From:', mailOptions.from);
+      console.log('📋 Subject:', template.subject);
+      console.log('🕐 Timestamp:', new Date().toISOString());
+      
+      logger.info(`✅ APPOINTMENT REMINDER email successfully sent:`, {
+        to: patientEmail,
+        patient: patientName,
+        from_clinic: clinicName,
+        subject: template.subject,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ [ERROR] Failed to send appointment reminder email');
+      console.error('👤 Patient:', patientName, '| Email:', patientEmail);
+      console.error('🏥 Clinic:', clinicName);
+      console.error('🔥 Error:', error instanceof Error ? error.message : String(error));
+      
+      logger.error(`❌ Failed to send appointment reminder email:`, {
+        recipient: patientEmail,
+        patient: patientName,
+        clinic: clinicName,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  }
+
   static async testConnection(): Promise<boolean> {
     try {
       // Check if email service is configured

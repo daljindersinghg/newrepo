@@ -539,4 +539,201 @@ export class AppointmentService {
       throw error;
     }
   }
+
+  // Admin-specific methods
+
+  /**
+   * Get all appointments for admin with enhanced search and filtering
+   */
+  static async getAllAppointmentsForAdmin(
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    search?: string,
+    clinicId?: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{
+    appointments: IAppointment[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (page - 1) * limit;
+    
+    // Build aggregation pipeline for better search and population
+    const pipeline: any[] = [
+      {
+        $lookup: {
+          from: 'patients',
+          localField: 'patient',
+          foreignField: '_id',
+          as: 'patientInfo'
+        }
+      },
+      {
+        $lookup: {
+          from: 'clinics',
+          localField: 'clinic',
+          foreignField: '_id',
+          as: 'clinicInfo'
+        }
+      }
+    ];
+
+    // Build match conditions
+    const matchConditions: any = {};
+    
+    if (status && status !== 'all') {
+      matchConditions.status = status;
+    }
+    
+    if (clinicId) {
+      matchConditions.clinic = new mongoose.Types.ObjectId(clinicId);
+    }
+    
+    if (startDate || endDate) {
+      matchConditions.appointmentDate = {};
+      if (startDate) matchConditions.appointmentDate.$gte = startDate;
+      if (endDate) matchConditions.appointmentDate.$lte = endDate;
+    }
+    
+    if (search) {
+      matchConditions.$or = [
+        { 'patientInfo.name': { $regex: search, $options: 'i' } },
+        { 'patientInfo.email': { $regex: search, $options: 'i' } },
+        { 'clinicInfo.name': { $regex: search, $options: 'i' } },
+        { 'originalRequest.reason': { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    pipeline.push({ $match: matchConditions });
+    
+    // Get total count
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const totalResult = await Appointment.aggregate(countPipeline);
+    const total = totalResult[0]?.total || 0;
+    
+    // Get paginated results
+    pipeline.push(
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    );
+    
+    const appointments = await Appointment.aggregate(pipeline);
+    
+    return {
+      appointments: appointments as IAppointment[],
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  /**
+   * Get appointment statistics for admin dashboard
+   */
+  static async getAdminAppointmentStats(): Promise<{
+    total: number;
+    pending: number;
+    confirmed: number;
+    completed: number;
+    cancelled: number;
+    rejected: number;
+    counterOffered: number;
+    recentBookings: number;
+    todaysAppointments: number;
+    upcomingThisWeek: number;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const [
+      total,
+      pending,
+      confirmed,
+      completed,
+      cancelled,
+      rejected,
+      counterOffered,
+      recentBookings,
+      todaysAppointments,
+      upcomingThisWeek
+    ] = await Promise.all([
+      Appointment.countDocuments(),
+      Appointment.countDocuments({ status: 'pending' }),
+      Appointment.countDocuments({ status: 'confirmed' }),
+      Appointment.countDocuments({ status: 'completed' }),
+      Appointment.countDocuments({ status: 'cancelled' }),
+      Appointment.countDocuments({ status: 'rejected' }),
+      Appointment.countDocuments({ status: 'counter-offered' }),
+      Appointment.countDocuments({
+        createdAt: { $gte: weekAgo }
+      }),
+      Appointment.countDocuments({
+        appointmentDate: { $gte: today, $lt: tomorrow },
+        status: { $in: ['confirmed', 'pending'] }
+      }),
+      Appointment.countDocuments({
+        appointmentDate: { $gte: today, $lte: weekFromNow },
+        status: { $in: ['confirmed', 'pending'] }
+      })
+    ]);
+    
+    return {
+      total,
+      pending,
+      confirmed,
+      completed,
+      cancelled,
+      rejected,
+      counterOffered,
+      recentBookings,
+      todaysAppointments,
+      upcomingThisWeek
+    };
+  }
+
+  /**
+   * Add admin message to appointment
+   */
+  static async addAdminMessage(
+    appointmentId: string,
+    adminId: string,
+    message: string
+  ): Promise<IAppointment | null> {
+    try {
+      const appointment = await Appointment.findByIdAndUpdate(
+        appointmentId,
+        {
+          $push: {
+            messages: {
+              sender: 'admin',
+              senderId: new mongoose.Types.ObjectId(adminId),
+              message,
+              sentAt: new Date()
+            }
+          },
+          lastActivityAt: new Date(),
+          updatedAt: new Date()
+        },
+        { new: true }
+      ).populate('patient', 'name email phone')
+       .populate('clinic', 'name address phone email');
+
+      return appointment;
+    } catch (error: any) {
+      logger.error('Error adding admin message:', error);
+      throw error;
+    }
+  }
 }
