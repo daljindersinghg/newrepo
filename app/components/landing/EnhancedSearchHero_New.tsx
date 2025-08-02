@@ -98,24 +98,24 @@ export function EnhancedSearchHero() {
   const recent = getRecentSearches(3);
 
   return (
-    <section className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-brand-light to-brand-secondary p-6 sm:p-8 md:p-12">
+    <section className="min-h-screen flex flex-col justify-center bg-gradient-to-br from-sky-200 via-sky-300 to-sky-400 p-6 sm:p-8 md:p-12">
       {/* Hero Text */}
       <div className="max-w-xl mx-auto text-center space-y-4 mb-8 sm:mb-12">
-        <span className="inline-block px-4 py-1 bg-brand-secondary text-brand-primary rounded-full text-xs font-medium animate-pulse">
+        <span className="inline-block px-4 py-1 bg-white/40 text-slate-700 rounded-full text-xs font-medium">
           Find Dentists Near You
         </span>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
-          Your <span className="text-transparent bg-clip-text bg-gradient-brand">Perfect Dentist</span><br />
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-800 leading-tight">
+          Your <span className="text-slate-700">Perfect Dentist</span><br />
           Is Just a Search Away
         </h1>
-        <p className="text-gray-600 text-sm sm:text-base max-w-sm mx-auto">
+        <p className="text-slate-600 text-sm sm:text-base max-w-sm mx-auto">
           Enter your address to discover verified dentists with instant booking and same-day availability.
         </p>
       </div>
 
       {/* Search Card */}
-      <div className="mt-8 max-w-lg mx-auto w-full bg-white p-6 rounded-2xl shadow-xl border border-gray-100 animate-slide-up-fade">
-        <label className="flex items-center gap-2 text-gray-700 mb-2">
+      <div className="mt-8 max-w-lg mx-auto w-full bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-white/50">
+        <label className="flex items-center gap-2 text-slate-700 mb-2">
           <span className="text-2xl">📍</span>
           <span className="font-semibold text-lg">Enter your location</span>
         </label>
@@ -123,21 +123,21 @@ export function EnhancedSearchHero() {
         <GooglePlacesAutocomplete
           placeholder="Enter your location"
           onPlaceSelect={handleLocationSelect}
-          className="w-full h-12 px-4 border border-gray-200 rounded-lg focus:border-brand-primary focus:ring-2 focus:ring-brand-light transition"
+          className="w-full h-12 px-4 border border-gray-200 rounded-lg focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition"
           showCurrentLocationButton={true}
         />
 
         {/* Recent Searches */}
         {!selectedLocation && recent.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+            <h4 className="text-xs text-slate-500 mb-2 flex items-center gap-1">
               <span className="text-base">⏱</span> Recent Searches
             </h4>
             <ul className="space-y-2">
               {recent.map((s, i) => (
                 <li key={i}>
                   <button
-                    className="w-full text-left px-3 py-2 hover:bg-brand-light rounded-lg transition-all duration-200 hover:scale-[1.01]"
+                    className="w-full text-left px-3 py-2 hover:bg-sky-100 rounded-lg transition-all duration-200 hover:scale-[1.01]"
                     onClick={() => {
                       setSelectedLocation({
                         place_id: s.place_id || '',
@@ -156,8 +156,8 @@ export function EnhancedSearchHero() {
                     }}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-800">{s.address}</span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-sm text-slate-700">{s.address}</span>
+                      <span className="text-xs text-slate-400">
                         {new Date(s.searchDate).toLocaleDateString()}
                       </span>
                     </div>
@@ -170,14 +170,14 @@ export function EnhancedSearchHero() {
 
         {/* Confirmation */}
         {selectedLocation && (
-          <div className="mt-4 p-4 bg-brand-light rounded-lg border border-brand-secondary flex items-center justify-between animate-slide-down-fade">
+          <div className="mt-4 p-4 bg-sky-100 rounded-lg border border-sky-200 flex items-center justify-between">
             <div>
-              <h3 className="text-brand-primary font-semibold">Location Confirmed</h3>
-              <p className="text-sm text-gray-700">{selectedLocation.formatted_address}</p>
+              <h3 className="text-sky-700 font-semibold">Location Confirmed</h3>
+              <p className="text-sm text-slate-600">{selectedLocation.formatted_address}</p>
             </div>
             <button
               onClick={() => setSelectedLocation(null)}
-              className="text-brand-primary hover:text-brand-accent transition-colors"
+              className="text-sky-600 hover:text-sky-800 transition-colors"
             >
               ×
             </button>
@@ -190,7 +190,7 @@ export function EnhancedSearchHero() {
           disabled={!selectedLocation}
           className={`mt-6 w-full py-3 font-semibold rounded-xl transition-all duration-300 ${
             selectedLocation
-              ? 'bg-gradient-brand text-white hover:opacity-90 active:scale-95'
+              ? 'bg-gradient-to-r from-sky-500 to-sky-600 text-white hover:opacity-90 active:scale-95'
               : 'bg-gray-200 text-gray-500 cursor-not-allowed'
           }`}
         >
@@ -199,10 +199,10 @@ export function EnhancedSearchHero() {
       </div>
 
       {/* Trust Indicators */}
-      <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-gray-600 text-sm">
+      <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-2 text-slate-600 text-sm">
         {['Verified dentists', 'Instant booking', 'Same-day appointments'].map((item) => (
           <div key={item} className="flex items-center gap-1 transition-transform hover:scale-105">
-            <span className="text-brand-primary text-lg">✓</span>
+            <span className="text-sky-600 text-lg">✓</span>
             <span>{item}</span>
           </div>
         ))}
