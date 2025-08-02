@@ -8,11 +8,12 @@ import { AdminLogin } from './AdminLogin';
 import { CreateClinicForm } from './CreateClinicForm';
 import { ViewClinics } from './ViewClinics';
 import { ClinicAuthManagement } from './ClinicAuthManagement';
+import { AdminAnalyticsDashboard } from './AdminAnalyticsDashboard';
 
-type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth';
+type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics';
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>('add-clinic');
+  const [activeTab, setActiveTab] = useState<TabType>('analytics');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(0);
   const { admin, isLoggedIn, logout, loading, refreshAuth } = useAdminAuth();
@@ -41,6 +42,11 @@ export function AdminDashboard() {
 
   const tabs = [
     {
+      id: 'analytics' as TabType,
+      label: 'Analytics',
+      icon: '📊'
+    },
+    {
       id: 'add-clinic' as TabType,
       label: 'Add Clinic',
       icon: '🏥'
@@ -61,6 +67,8 @@ export function AdminDashboard() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'analytics':
+        return <AdminAnalyticsDashboard />;
       case 'add-clinic':
         return <CreateClinicForm />;
    
@@ -69,7 +77,7 @@ export function AdminDashboard() {
       case 'clinic-auth':
         return <ClinicAuthManagement />;
       default:
-        return <CreateClinicForm />;
+        return <AdminAnalyticsDashboard />;
     }
   };
 
