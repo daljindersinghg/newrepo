@@ -57,17 +57,17 @@ export class EmailService {
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background-color: #10b981; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+              <div style="background-color: #51ade5; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                 <h1 style="margin: 0; font-size: 24px;">Appointment Confirmed! ✅</h1>
               </div>
               
-              <div style="background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb;">
+              <div style="background-color: #b4e7f5; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #81d7f6;">
                 <p style="margin-top: 0;">Hi ${patientName},</p>
                 
                 <p>Great news! Your appointment with <strong>${clinicName}</strong> has been confirmed.</p>
                 
-                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #d1d5db; margin: 20px 0;">
-                  <h3 style="margin-top: 0; color: #10b981;">Appointment Details</h3>
+                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #81d7f6; margin: 20px 0;">
+                  <h3 style="margin-top: 0; color: #51ade5;">Appointment Details</h3>
                   <p><strong>Date:</strong> ${formattedDate}</p>
                   <p><strong>Time:</strong> ${formattedTime}</p>
                   <p><strong>Duration:</strong> ${duration} minutes</p>
@@ -75,7 +75,7 @@ export class EmailService {
                   <p><strong>Clinic:</strong> ${clinicName}</p>
                 </div>
                 
-                <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                <div style="background-color: #81d7f6; padding: 15px; border-radius: 8px; border-left: 4px solid #51ade5; margin: 20px 0;">
                   <p style="margin: 0;"><strong>Please note:</strong> Arrive 15 minutes early for check-in.</p>
                 </div>
                 
@@ -133,11 +133,11 @@ The ${clinicName} Team
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background-color: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+              <div style="background-color: #51ade5; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                 <h1 style="margin: 0; font-size: 24px;">Alternative Time Suggested 🔄</h1>
               </div>
               
-              <div style="background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb;">
+              <div style="background-color: #b4e7f5; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #81d7f6;">
                 <p style="margin-top: 0;">Hi ${patientName},</p>
                 
                 <p>Thank you for your appointment request with <strong>${clinicName}</strong>.</p>
@@ -151,20 +151,20 @@ The ${clinicName} Team
                     <p><strong>Time:</strong> ${originalTimeFormatted}</p>
                   </div>
                   
-                  <div style="flex: 1; background-color: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
-                    <h4 style="margin-top: 0; color: #16a34a;">Suggested Alternative</h4>
+                  <div style="flex: 1; background-color: #81d7f6; padding: 15px; border-radius: 8px; border-left: 4px solid #51ade5;">
+                    <h4 style="margin-top: 0; color: #51ade5;">Suggested Alternative</h4>
                     <p><strong>Date:</strong> ${proposedFormatted}</p>
                     <p><strong>Time:</strong> ${proposedTimeFormatted}</p>
                     <p><strong>Duration:</strong> ${duration} minutes</p>
                   </div>
                 </div>
                 
-                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #d1d5db; margin: 20px 0;">
+                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #81d7f6; margin: 20px 0;">
                   <h4 style="margin-top: 0;">Message from ${clinicName}:</h4>
                   <p style="font-style: italic; margin-bottom: 0;">"${message}"</p>
                 </div>
                 
-                <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <div style="background-color: #81d7f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                   <p style="margin: 0;"><strong>What's next?</strong> Please log into your account to accept or decline this alternative time, or suggest a different time that works for you.</p>
                 </div>
                 
@@ -219,11 +219,11 @@ The ${clinicName} Team
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background-color: #ef4444; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+              <div style="background-color: #51ade5; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                 <h1 style="margin: 0; font-size: 24px;">Appointment Request Update</h1>
               </div>
               
-              <div style="background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb;">
+              <div style="background-color: #b4e7f5; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #81d7f6;">
                 <p style="margin-top: 0;">Hi ${patientName},</p>
                 
                 <p>Thank you for your interest in scheduling an appointment with <strong>${clinicName}</strong>.</p>
@@ -236,12 +236,12 @@ The ${clinicName} Team
                 
                 <p>Unfortunately, we're unable to accommodate your requested appointment time.</p>
                 
-                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #d1d5db; margin: 20px 0;">
+                <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #81d7f6; margin: 20px 0;">
                   <h4 style="margin-top: 0;">Message from ${clinicName}:</h4>
                   <p style="font-style: italic; margin-bottom: 0;">"${reason}"</p>
                 </div>
                 
-                <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <div style="background-color: #81d7f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                   <p style="margin: 0;"><strong>Don't give up!</strong> Please feel free to submit a new appointment request with different dates and times that work for you. We're here to help find a time that works for both of us.</p>
                 </div>
                 

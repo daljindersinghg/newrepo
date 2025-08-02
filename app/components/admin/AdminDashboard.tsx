@@ -1,22 +1,45 @@
 // components/admin/AdminDashboard.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { adminApi } from '@/lib/api/admin';
 import { AdminLogin } from './AdminLogin';
 import { CreateClinicForm } from './CreateClinicForm';
 import { ViewClinics } from './ViewClinics';
 import { ClinicAuthManagement } from './ClinicAuthManagement';
 import { AdminAnalyticsDashboard } from './AdminAnalyticsDashboard';
+import { PatientsManagement } from './UsersManagement';
 
-type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics';
+type TabType = 'add-clinic' | 'add-doctor' | 'view-clinics' | 'view-doctors' | 'clinic-auth' | 'analytics' | 'patients';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [forceRefresh, setForceRefresh] = useState(0);
+  const [patientStats, setPatientStats] = useState<{ total: number; withBookings: number } | null>(null);
   const { admin, isLoggedIn, logout, loading, refreshAuth } = useAdminAuth();
+
+  // Fetch patient stats for header display
+  useEffect(() => {
+    const fetchPatientStats = async () => {
+      try {
+        const response = await adminApi.getPatientStats();
+        if (response.success) {
+          setPatientStats({
+            total: response.data.total,
+            withBookings: response.data.withBookings
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch patient stats:', error);
+      }
+    };
+
+    if (isLoggedIn) {
+      fetchPatientStats();
+    }
+  }, [isLoggedIn]);
 
   // Show login if not authenticated
   if (!isLoggedIn && !loading) {
@@ -47,11 +70,15 @@ export function AdminDashboard() {
       icon: '📊'
     },
     {
+      id: 'patients' as TabType,
+      label: 'Patients',
+      icon: '👥'
+    },
+    {
       id: 'add-clinic' as TabType,
       label: 'Add Clinic',
       icon: '🏥'
     },
-
     {
       id: 'view-clinics' as TabType,
       label: 'View Clinics',
@@ -62,16 +89,16 @@ export function AdminDashboard() {
       label: 'Clinic Authentication',
       icon: '🔐'
     },
-
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'analytics':
         return <AdminAnalyticsDashboard />;
+      case 'patients':
+        return <PatientsManagement />;
       case 'add-clinic':
         return <CreateClinicForm />;
-   
       case 'view-clinics':
         return <ViewClinics />;
       case 'clinic-auth':
@@ -102,6 +129,7 @@ export function AdminDashboard() {
             <span className="text-xl font-bold text-white">Admin Panel</span>
           </div>
           <button
+            type="button"
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-white hover:bg-blue-700 p-1 rounded"
             title="Close sidebar"
@@ -119,6 +147,7 @@ export function AdminDashboard() {
             {tabs.map((tab) => (
               <li key={tab.id}>
                 <button
+                  type="button"
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
                     "w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors",
@@ -150,6 +179,7 @@ export function AdminDashboard() {
               </div>
             </div>
             <button
+              type="button"
               onClick={logout}
               className="text-gray-400 hover:text-gray-600 p-1"
               title="Logout"
@@ -170,6 +200,7 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between h-16 px-6">
             <div className="flex items-center">
               <button
+                type="button"
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
                 title="Open sidebar"
@@ -188,6 +219,20 @@ export function AdminDashboard() {
                 </p>
               </div>
             </div>
+            
+            {/* Patient Stats in Header */}
+            {patientStats && (
+              <div className="flex items-center space-x-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{patientStats.total}</div>
+                  <div className="text-xs text-gray-500">Total Patients</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{patientStats.withBookings}</div>
+                  <div className="text-xs text-gray-500">Patients with Bookings</div>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 

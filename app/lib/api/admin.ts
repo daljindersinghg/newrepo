@@ -48,5 +48,34 @@ export const adminApi = {
   async getDashboardAnalytics(timeRange: string = '7d'): Promise<any> {
     const response = await api.get(`/api/v1/admin/analytics/dashboard?timeRange=${timeRange}`);
     return response.data;
+  },
+
+  // Patient Management
+  async getAllPatients(page: number = 1, limit: number = 10, search?: string, signupStep?: string): Promise<any> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (search) params.append('search', search);
+    if (signupStep && signupStep !== 'all') params.append('signupStep', signupStep);
+    
+    const response = await api.get(`/api/v1/admin/patients?${params.toString()}`);
+    return response.data;
+  },
+
+  async getPatientStats(): Promise<any> {
+    const response = await api.get('/api/v1/admin/patients/stats');
+    return response.data;
+  },
+
+  async getPatientById(patientId: string): Promise<any> {
+    const response = await api.get(`/api/v1/admin/patients/${patientId}`);
+    return response.data;
+  },
+
+  async updatePatientStep(patientId: string, signupStep: 1 | 2 | 'completed'): Promise<any> {
+    const response = await api.put(`/api/v1/admin/patients/${patientId}/step`, { signupStep });
+    return response.data;
   }
 };

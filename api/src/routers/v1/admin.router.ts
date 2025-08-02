@@ -43,6 +43,12 @@ adminRouter.get("/analytics/patient-journey", AnalyticsController.getPatientJour
 adminRouter.get("/analytics/patient-dropoffs", AnalyticsController.getPatientDropoffs);
 adminRouter.post("/analytics/patient-cohort", AnalyticsController.getPatientCohort);
 
+// Patient Management endpoints
+adminRouter.get("/patients", AdminController.getAllPatients);
+adminRouter.get("/patients/stats", AdminController.getPatientStats);
+adminRouter.get("/patients/:patientId", AdminController.getPatientById);
+adminRouter.put("/patients/:patientId/step", AdminController.updatePatientStep);
+
 // ============ PARAMETERIZED ROUTES LAST ============
 // These MUST come AFTER all specific routes
 
