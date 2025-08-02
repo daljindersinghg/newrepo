@@ -122,18 +122,12 @@ export function PatientsManagement() {
             <h3 className="text-sm font-medium text-gray-500">With Bookings</h3>
             <p className="text-2xl font-bold text-green-600">{stats.withBookings}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Completed</h3>
-            <p className="text-2xl font-bold text-blue-600">{stats.completed}</p>
-          </div>
+     
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500">Step 1</h3>
             <p className="text-2xl font-bold text-yellow-600">{stats.step1}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Step 2</h3>
-            <p className="text-2xl font-bold text-orange-600">{stats.step2}</p>
-          </div>
+      
           <div className="bg-white p-4 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500">Verified</h3>
             <p className="text-2xl font-bold text-purple-600">{stats.verified}</p>
@@ -142,10 +136,7 @@ export function PatientsManagement() {
             <h3 className="text-sm font-medium text-gray-500">Unverified</h3>
             <p className="text-2xl font-bold text-red-600">{stats.unverified}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Recent Signups</h3>
-            <p className="text-2xl font-bold text-indigo-600">{stats.recentSignups}</p>
-          </div>
+   
         </div>
       )}
 
@@ -272,17 +263,7 @@ export function PatientsManagement() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(patient.createdAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <select
-                      value={patient.signupStep}
-                      onChange={(e) => handleStepUpdate(patient._id, e.target.value as 1 | 2 | 'completed')}
-                      className="text-sm border border-gray-300 rounded px-2 py-1"
-                    >
-                      <option value={1}>Step 1</option>
-                      <option value={2}>Step 2</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </td>
+                 
                 </tr>
               ))}
             </tbody>
