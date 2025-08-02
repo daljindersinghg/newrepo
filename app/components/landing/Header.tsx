@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
@@ -91,6 +91,16 @@ export function Header() {
                   About
                 </a>
                 
+                {/* Clinic Login for Mobile */}
+                <div className="border-t border-gray-200 pt-4">
+                  <Link 
+                    href="/clinic/login" 
+                    className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600"
+                  >
+                    Dentist Login
+                  </Link>
+                </div>
+                
                 {/* Mobile Auth Section */}
                 {isAuthenticated && patientInfo ? (
                   <div className="border-t border-gray-200 pt-4 pb-3">
@@ -106,12 +116,8 @@ export function Header() {
                       </div>
                     </div>
                     <div className="mt-3 space-y-1">
-                      <Link href="/patient/dashboard" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-                        Dashboard
-                      </Link>
-                      <Link href="/patient/profile" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
-                        Profile
-                      </Link>
+                  
+                    
                       <Link href="/patient/appointments" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600">
                         My Appointments
                       </Link>
@@ -155,7 +161,4 @@ export function Header() {
       </header>
     </>
   );
-
-
- 
 }
