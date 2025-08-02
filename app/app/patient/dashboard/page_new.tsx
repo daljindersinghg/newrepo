@@ -192,21 +192,21 @@ export default function PatientDashboard() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-gray-900 truncate">
-                          {appointment.clinicName}
+                          {appointment.clinic.name}
                         </h3>
                         <p className="text-sm text-gray-600 mt-1">
-                          {appointment.service} • {format(new Date(appointment.preferredDate), 'MMM d, yyyy')}
+                          {appointment.type} • {format(new Date(appointment.originalRequest.requestedDate), 'MMM d, yyyy')}
                         </p>
-                        {appointment.preferredTime && (
+                        {appointment.originalRequest.requestedTime && (
                           <p className="text-sm text-gray-500">
-                            Preferred: {appointment.preferredTime}
+                            Preferred: {appointment.originalRequest.requestedTime}
                           </p>
                         )}
                       </div>
                       <AppointmentStatus status={appointment.status} />
                     </div>
                     
-                    {appointment.urgency === 'emergency' && (
+                    {appointment.type === 'emergency' && (
                       <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 mb-2">
                         🚨 Emergency
                       </div>
