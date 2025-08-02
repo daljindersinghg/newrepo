@@ -4,9 +4,17 @@ import dotenv from 'dotenv';
 import { PostHog } from 'posthog-node';
 dotenv.config();
 
-export const posthog = new PostHog(process.env.POSTHOG_API_KEY!, {
-  host: process.env.POSTHOG_HOST || 'https://app.posthog.com',
-});
+// Check if PostHog is properly configured
+const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY;
+const POSTHOG_HOST = process.env.POSTHOG_HOST || 'https://app.posthog.com';
+
+if (!POSTHOG_API_KEY) {
+  console.warn('⚠️ PostHog API key not found. Analytics will be disabled.');
+}
+
+export const posthog = POSTHOG_API_KEY 
+  ? new PostHog(POSTHOG_API_KEY, { host: POSTHOG_HOST })
+  : null;
 
 // Helper function for patient tracking
 export const trackPatientEvent = (
@@ -16,6 +24,11 @@ export const trackPatientEvent = (
   email?: string
 ) => {
   try {
+    if (!posthog) {
+      console.warn('PostHog not configured, skipping event:', event);
+      return;
+    }
+    
     posthog.capture({
       distinctId,
       event,
@@ -38,6 +51,11 @@ export const identifyPatient = (
   properties: Record<string, any> = {}
 ) => {
   try {
+    if (!posthog) {
+      console.warn('PostHog not configured, skipping identify for:', email);
+      return;
+    }
+    
     posthog.identify({
       distinctId,
       properties: {

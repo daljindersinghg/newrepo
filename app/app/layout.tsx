@@ -2,20 +2,22 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Header } from '@/components/landing/Header'
-import { EnhancedSearchHero } from '@/components/landing/EnhancedSearchHero'
-import { HowItWorks } from '@/components/landing/HowItWorks'
-import { CTASection } from '@/components/landing/CTASection'
-import { Footer } from '@/components/landing/Footer'
 import { PostHogProvider } from '@/providers/PostHogProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
 import { AuthModal } from '@/components/auth/AuthModal'
-import { SimpleTracker } from '@/components/SimpleSideTracker'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+const geistSans = Geist({ 
+  variable: '--font-geist-sans', 
+  subsets: ['latin'],
+  display: 'swap'
+})
+const geistMono = Geist_Mono({ 
+  variable: '--font-geist-mono', 
+  subsets: ['latin'],
+  display: 'swap'
+})
 
 export const metadata: Metadata = {
   title: 'DentalCare+ | Find & Book Dentist Appointments Online | $50 Gift Card',
@@ -62,8 +64,10 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const fontClasses = `${geistSans.variable} ${geistMono.variable}`;
+  
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={fontClasses}>
       <head>
         {/* JSON-LD structured data */}
         <script
@@ -97,12 +101,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="antialiased bg-white min-h-screen">
         <PostHogProvider>
           <AuthProvider>
-            <Header />
-            <EnhancedSearchHero />
-            <HowItWorks rewardAmount="50" />
-            <CTASection />
-            <Footer />
-            <SimpleTracker />
             <AuthModal />
             {children}
             <Analytics />

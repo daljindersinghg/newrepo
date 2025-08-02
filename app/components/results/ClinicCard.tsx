@@ -68,8 +68,9 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
     });
   };
 
-  const displayRating = clinic.rating || (4.0 + (Math.random() * 1.0));
-  const displayReviewCount = clinic.reviewCount || (10 + Math.floor(Math.random() * 40));
+  // Use stable fallback values instead of Math.random to avoid hydration issues
+  const stableRating = clinic.rating || 4.2;
+  const stableReviewCount = clinic.reviewCount || 25;
 
   const getCurrentDayHours = () => {
     if (!clinic.hours) return 'Call for hours';
@@ -133,7 +134,7 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
                 {[...Array(5)].map((_, i) => (
                   <svg
                     key={i}
-                    className={`w-3 h-3 ${i < Math.floor(displayRating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                    className={`w-3 h-3 ${i < Math.floor(stableRating) ? 'text-yellow-400' : 'text-gray-300'}`}
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -142,7 +143,7 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
                 ))}
               </div>
               <span className="ml-1 text-xs text-gray-600">
-                {displayRating.toFixed(1)} ({displayReviewCount})
+                {stableRating.toFixed(1)} ({stableReviewCount})
               </span>
             </div>
 
@@ -245,6 +246,7 @@ export function ClinicCard({ clinic, index, userEmail, isHighlighted = false }: 
             <button
               onClick={() => setShowBookingModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+              aria-label="Close booking modal"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
