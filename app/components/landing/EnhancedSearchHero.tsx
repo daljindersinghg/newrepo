@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { GooglePlacesAutocomplete } from './GooglePlacesAutocomplete';
 import { useSimpleTracking } from '../AnalyticsProvider';
+import { usePatientTracking } from '@/hooks/usePatientTracking';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 
 interface PlaceResult {
@@ -18,24 +19,56 @@ interface PlaceResult {
 export function EnhancedSearchHero() {
   const [selectedLocation, setSelectedLocation] = useState<PlaceResult | null>(null);
   const { track } = useSimpleTracking();
+  const { trackSearch, trackEvent } = usePatientTracking();
   const { addSearch, getLastSearch, hasSearchHistory, getRecentSearches } = useSearchHistory();
   const [showPrevious, setShowPrevious] = useState(false);
 
   useEffect(() => {
+    // Track landing page view
+    trackEvent('landing_page_viewed', {
+      page_section: 'search_hero',
+      has_search_history: hasSearchHistory()
+    });
+
     const last = getLastSearch();
     if (last && hasSearchHistory()) {
       setShowPrevious(true);
     }
-  }, [getLastSearch, hasSearchHistory]);
+  }, [getLastSearch, hasSearchHistory, trackEvent]);
 
   const handleLocationSelect = (place: PlaceResult) => {
     setSelectedLocation(place);
     track('address_selected');
+    
+    // Track location selection with detailed info
+    trackEvent('location_selected', {
+      address: place.formatted_address,
+      place_id: place.place_id,
+      location_types: place.types,
+      coordinates: {
+        lat: place.geometry.location.lat,
+        lng: place.geometry.location.lng
+      }
+    });
   };
 
   const doSearch = () => {
     if (!selectedLocation) return;
+    
     track('search_dentists_clicked');
+    
+    // Track search initiation
+    trackSearch('dentist_search', selectedLocation.formatted_address, []);
+    trackEvent('dentist_search_initiated', {
+      address: selectedLocation.formatted_address,
+      place_id: selectedLocation.place_id,
+      search_method: 'new_search',
+      coordinates: {
+        lat: selectedLocation.geometry.location.lat,
+        lng: selectedLocation.geometry.location.lng
+      }
+    });
+    
     addSearch({
       address: selectedLocation.formatted_address,
       lat: selectedLocation.geometry.location.lat,
@@ -48,7 +81,19 @@ export function EnhancedSearchHero() {
   const resumePrevious = () => {
     const last = getLastSearch();
     if (!last) return;
+    
     track('return_to_previous_search_clicked');
+    
+    // Track previous search resume
+    trackEvent('previous_search_resumed', {
+      previous_address: last.address,
+      search_method: 'resume_previous',
+      coordinates: {
+        lat: last.lat,
+        lng: last.lng
+      }
+    });
+    
     localStorage.setItem('searchLocation', JSON.stringify({
       address: last.address,
       lat: last.lat,

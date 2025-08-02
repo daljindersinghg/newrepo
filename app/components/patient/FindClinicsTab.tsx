@@ -1,6 +1,19 @@
 'use client';
 
+import { usePatientTracking } from '@/hooks/usePatientTracking';
+
 export function FindClinicsTab() {
+  const { trackEvent } = usePatientTracking();
+
+  const handleGoToSearch = () => {
+    trackEvent('patient_clinic_search_initiated', {
+      source: 'dashboard_find_clinics_tab',
+      action: 'go_to_clinic_search'
+    });
+    
+    window.location.href = '/';
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-8 text-center">
       <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-blue-100 mb-4">
@@ -14,7 +27,7 @@ export function FindClinicsTab() {
       </p>
       <button
         type="button"
-        onClick={() => window.location.href = '/'}
+        onClick={handleGoToSearch}
         className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
       >
         Go to Clinic Search
