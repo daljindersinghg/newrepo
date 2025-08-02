@@ -139,7 +139,7 @@ ReceiptSchema.pre('save', function(next) {
 
 // Static methods
 ReceiptSchema.statics.findByPatient = function(patientId: string, options: any = {}) {
-  const query = { patient: patientId, isActive: true };
+  const query: any = { patient: patientId, isActive: true };
   if (options.type) query.type = options.type;
   
   return this.find(query)
