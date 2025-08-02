@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { EmailCapture } from './EmailCapture';
 import { ClinicCard } from './ClinicCard';
 import { MapView } from './MapView';
-import api from '@/lib/api';
+import { clinicApi, ClinicSearchFilters } from '@/lib/api/clinic';
 
 interface Clinic {
   _id: string;
@@ -84,10 +84,11 @@ export function ClinicResults() {
   const [showEmailCapture, setShowEmailCapture] = useState(true);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'availability'>('distance');
+  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'name' | 'relevance'>('distance');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('');
   const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const { track } = useSimpleTracking();
 
   useEffect(() => {
@@ -110,43 +111,48 @@ export function ClinicResults() {
     }
   }, []);
 
-  const fetchClinics = async (locationData: LocationData) => {
+  const fetchClinics = async (locationData: LocationData, searchTerm?: string) => {
     try {
       setLoading(true);
       
-      // Build query parameters
-      const params = new URLSearchParams({
-        limit: '50',
-        status: 'active'
-      });
+      const searchFilters: ClinicSearchFilters = {
+        limit: 50,
+        verified: true,
+        active: true,
+        location: {
+          lat: locationData.lat,
+          lng: locationData.lng,
+          radius: 25 // 25km radius
+        },
+        sortBy: sortBy,
+        search: searchTerm || specialtyFilter || undefined
+      };
 
+      // Add services filter if specialty is selected
       if (specialtyFilter) {
-        params.append('specialty', specialtyFilter);
+        searchFilters.services = [specialtyFilter];
       }
 
-      const response = await api.get(`/api/v1/public/clinics?${params}`);
+      const response = await clinicApi.searchClinics(searchFilters);
       
-      if (response.data.success) {
-        // Filter for active and verified clinics only
-        const activeClinics = response.data.data.clinics.filter((clinic: Clinic) => 
-          clinic.isVerified == true
-        );
-        
-        // Sort clinics based on sortBy criteria
-        const sortedClinics = sortClinics(activeClinics, sortBy);
+      if (response.success) {
+        // Sort clinics based on sortBy criteria (if not already sorted by backend)
+        const sortedClinics = sortClinics(response.data.clinics, sortBy);
         setClinics(sortedClinics);
         
         track('clinic_results_loaded', {
           location: locationData.address,
           clinic_count: sortedClinics.length,
           specialty_filter: specialtyFilter || 'all',
-          sort_by: sortBy
+          sort_by: sortBy,
+          search_term: searchTerm || '',
+          search_method: response.data.searchMeta?.searchMethod || 'location'
         });
       } else {
-        throw new Error(response.data.message || 'Failed to fetch Clinic');
+        throw new Error(response.message || 'Failed to fetch clinics');
       }
     } catch (err: any) {
-      console.error('Error fetching Clinic:', err);
+      console.error('Error fetching clinics:', err);
       setError(`Failed to load Clinic: ${err.response?.data?.message || err.message}. Please try again.`);
  
     } finally {
@@ -158,12 +164,14 @@ export function ClinicResults() {
     switch (sortBy) {
       case 'rating':
         return [...clinicList].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      case 'availability':
-        // For now, random sort since we don't have availability data yet
-        return [...clinicList].sort(() => Math.random() - 0.5);
+      case 'name':
+        return [...clinicList].sort((a, b) => a.name.localeCompare(b.name));
+      case 'relevance':
+        // Keep original order for relevance (backend handles this)
+        return clinicList;
       case 'distance':
       default:
-        // For now, keep original order (could implement actual distance sorting later)
+        // For now, keep original order (backend $near handles distance sorting)
         return clinicList;
     }
   };
@@ -188,7 +196,7 @@ export function ClinicResults() {
     window.location.href = '/';
   };
 
-  const handleSortChange = (newSortBy: 'distance' | 'rating' | 'availability') => {
+  const handleSortChange = (newSortBy: 'distance' | 'rating' | 'name' | 'relevance') => {
     setSortBy(newSortBy);
     const sortedClinics = sortClinics(clinics, newSortBy);
     setClinics(sortedClinics);
@@ -203,13 +211,28 @@ export function ClinicResults() {
   const handleSpecialtyFilter = (specialty: string) => {
     setSpecialtyFilter(specialty);
     if (location) {
-      fetchClinics(location);
+      fetchClinics(location, searchQuery);
     }
     
     track('clinic_results_filtered', {
       specialty_filter: specialty || 'all',
       location: location?.address
     });
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (location && searchQuery.trim()) {
+      fetchClinics(location, searchQuery.trim());
+      track('clinic_search_performed', {
+        search_term: searchQuery.trim(),
+        location: location?.address
+      });
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
 
   const handleClinicSelect = (clinicId: string) => {
@@ -369,12 +392,15 @@ export function ClinicResults() {
                   </label>
                   <select 
                     value={sortBy}
-                    onChange={(e) => handleSortChange(e.target.value as 'distance' | 'rating' | 'availability')}
+                    onChange={(e) => handleSortChange(e.target.value as 'distance' | 'rating' | 'name' | 'relevance')}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-w-[150px]"
+                    aria-label="Sort clinics by"
+                    title="Sort clinics by"
                   >
+                    <option value="relevance">Relevance</option>
                     <option value="distance">Distance</option>
                     <option value="rating">Rating</option>
-                    <option value="availability">Availability</option>
+                    <option value="name">Name</option>
                   </select>
                 </div>
               </div>
@@ -388,8 +414,11 @@ export function ClinicResults() {
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2">
                     {specialtyFilter}
                     <button 
+                      type="button"
                       onClick={() => handleSpecialtyFilter('')}
                       className="hover:bg-blue-200 rounded-full p-1"
+                      aria-label="Remove specialty filter"
+                      title="Remove filter"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />

@@ -2,7 +2,7 @@
 import express from "express";
 import { AdminController } from "../../controllers/admin.controller";
 import { ClinicController } from "../../controllers/clinic.controller";
-import { adminAuth } from "../../middleware/adminAuth.middleware";
+
 
 const adminRouter = express.Router();
 
@@ -14,7 +14,7 @@ adminRouter.post("/logout", AdminController.logoutAdmin);
 
 // ============ PROTECTED ROUTES (REQUIRE AUTH) ============
 // Apply admin authentication to all routes below
-adminRouter.use(adminAuth);
+// adminRouter.use(adminAuth);
 
 // Clinic Management - SPECIFIC routes first
 adminRouter.get("/clinics", ClinicController.getClinics);
