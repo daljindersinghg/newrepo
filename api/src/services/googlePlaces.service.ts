@@ -135,7 +135,8 @@ export class GooglePlacesService {
       const params: any = {
         query: query,
         key: this.apiKey,
-        fields: 'place_id,name,formatted_address,rating,geometry'
+        fields: 'place_id,name,formatted_address,rating,geometry',
+        region: 'ca'  // Restrict results to Canada
       };
 
       if (location) {

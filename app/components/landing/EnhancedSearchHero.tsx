@@ -76,41 +76,6 @@ export function EnhancedSearchHero() {
         </p>
       </div>
 
-      {/* Previous Search Card with refined styling and animation */}
-      {showPrevious && getLastSearch() && (
-        <div className="mt-6 max-w-md mx-auto w-full bg-white shadow-lg rounded-2xl p-5 border border-gray-100 animate-slide-up-fade">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg text-gray-800 font-semibold">Continue Previous Search</h3>
-              <p className="text-sm text-gray-600 truncate max-w-[200px] sm:max-w-full">{getLastSearch()?.address}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(getLastSearch()!.searchDate).toLocaleDateString()}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowPrevious(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={resumePrevious}
-              className="flex-1 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-transform hover:scale-[1.01] active:scale-95"
-            >
-              Continue
-            </button>
-            <button
-              onClick={() => setShowPrevious(false)}
-              className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-transform hover:scale-[1.01] active:scale-95"
-            >
-              New Search
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Search Card with refined styling and animation */}
       <div className="mt-8 max-w-lg mx-auto w-full bg-white p-6 rounded-2xl shadow-xl border border-gray-100 animate-slide-up-fade">
