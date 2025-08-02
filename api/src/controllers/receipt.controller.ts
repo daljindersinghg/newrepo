@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ReceiptService } from '../services/receipt.service';
 import logger from '../config/logger.config';
 
+
 export class ReceiptController {
   
   /**
@@ -18,16 +19,15 @@ export class ReceiptController {
         description,
         fileSize,
         mimeType,
-        metadata
+        metadata,
+        patientId
       } = req.body;
 
-      // Get patient ID from authenticated user
-      const patientId = req.user?.id || req.body.patientId;
-      
+      // Simple - get patient ID from request body
       if (!patientId) {
-        res.status(401).json({
+        res.status(400).json({
           success: false,
-          message: 'Authentication required'
+          message: 'Patient ID is required'
         });
         return;
       }
@@ -66,7 +66,7 @@ export class ReceiptController {
    */
   static async getPatientReceipts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const patientId = req.user?.id || req.params.patientId;
+      const patientId = req.params.patientId || req.query.patientId as string;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       
@@ -99,7 +99,7 @@ export class ReceiptController {
   static async getReceiptById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { receiptId } = req.params;
-      const patientId = req.user?.id;
+      const patientId = req.query.patientId as string;
 
       const receipt = await ReceiptService.getReceiptById(receiptId, patientId);
 
@@ -131,13 +131,12 @@ export class ReceiptController {
   static async updateReceipt(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { receiptId } = req.params;
-      const patientId = req.user?.id;
-      const { type, description, metadata } = req.body;
+      const { type, description, metadata, patientId } = req.body;
 
       if (!patientId) {
-        res.status(401).json({
+        res.status(400).json({
           success: false,
-          message: 'Authentication required'
+          message: 'Patient ID is required'
         });
         return;
       }
@@ -177,12 +176,12 @@ export class ReceiptController {
   static async deleteReceipt(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { receiptId } = req.params;
-      const patientId = req.user?.id;
+      const patientId = req.body.patientId;
 
       if (!patientId) {
-        res.status(401).json({
+        res.status(400).json({
           success: false,
-          message: 'Authentication required'
+          message: 'Patient ID is required'
         });
         return;
       }
@@ -215,7 +214,7 @@ export class ReceiptController {
    */
   static async getReceiptStats(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const patientId = req.user?.id || req.params.patientId;
+      const patientId = req.params.patientId || req.query.patientId as string;
 
       const stats = await ReceiptService.getPatientReceiptStats(patientId);
 
@@ -238,13 +237,13 @@ export class ReceiptController {
    */
   static async getReceiptsByType(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const patientId = req.user?.id;
+      const patientId = req.query.patientId as string;
       const { type } = req.params;
 
       if (!patientId) {
-        res.status(401).json({
+        res.status(400).json({
           success: false,
-          message: 'Authentication required'
+          message: 'Patient ID is required'
         });
         return;
       }
@@ -279,15 +278,15 @@ export class ReceiptController {
    */
   static async searchReceipts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const patientId = req.user?.id;
+      const patientId = req.query.patientId as string;
       const { q: searchTerm } = req.query;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
 
       if (!patientId) {
-        res.status(401).json({
+        res.status(400).json({
           success: false,
-          message: 'Authentication required'
+          message: 'Patient ID is required'
         });
         return;
       }
@@ -321,13 +320,13 @@ export class ReceiptController {
    */
   static async getRecentReceipts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const patientId = req.user?.id;
+      const patientId = req.query.patientId as string;
       const limit = parseInt(req.query.limit as string) || 5;
 
       if (!patientId) {
-        res.status(401).json({
+        res.status(400).json({
           success: false,
-          message: 'Authentication required'
+          message: 'Patient ID is required'
         });
         return;
       }
