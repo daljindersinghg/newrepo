@@ -20,10 +20,10 @@ interface SignupData {
 }
 
 export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
-  const { signup } = useAuth();
+  const { signup, hideAuthModal } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<SignupData>({
-    email: 'indianshahishere@gmail.com',
+    email: '',
     otp: '',
     name: '',
     phone: '',
@@ -164,8 +164,13 @@ export function SignupForm({ onSwitchToLogin }: SignupFormProps) {
         };
         localStorage.setItem('patientInfo', JSON.stringify(userInfo));
         
-        // Success is handled by the response (JWT cookie is set)
-        window.location.reload(); // Refresh to update auth state
+        // Close the modal first, then reload
+        hideAuthModal();
+        
+        // Small delay to ensure modal closes before reload
+        setTimeout(() => {
+          window.location.reload(); // Refresh to update auth state
+        }, 100);
       } else {
         setError(response.data.message || 'Failed to create account');
       }
