@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
+import { useRouter } from 'next/navigation';
 
 interface SharedHeaderProps {
   showDentistLogin?: boolean;
@@ -23,7 +24,7 @@ export function SharedHeader({
   const { patientInfo, isAuthenticated, logout } = usePatientAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-
+  const navigation = useRouter();
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -76,19 +77,30 @@ export function SharedHeader({
             </Link>
           </div>
 
-          {/* Custom Content or Navigation */}
-          <div className="flex items-center space-x-4">
+          {/* Navigation */}
+          <div className="flex items-center space-x-2 md:space-x-4">
             {customContent}
             
-            {/* Dentist Login */}
-            {showDentistLogin && (
-              <Link 
-                href="/clinic/login" 
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Dentist Login
-              </Link>
-            )}
+            {/* Appointments Link - Always visible */}
+            <Link 
+              href="/patient/appointments" 
+              className="text-gray-900 hover:text-blue-600 px-2 md:px-3 py-2 text-sm font-bold transition-colors"
+            >
+              Appointments
+            </Link>
+            
+            {/* Desktop Only Navigation */}
+            <div className="hidden md:flex items-center space-x-6">
+              {/* Dentist Login - Hidden on mobile */}
+              {showDentistLogin && (
+                <Link 
+                  href="/clinic" 
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                >
+                  Dentist Login
+                </Link>
+              )}
+            </div>
 
             {/* Patient Auth */}
             {showPatientAuth && (
@@ -97,38 +109,52 @@ export function SharedHeader({
                   <div className="relative" ref={userMenuRef}>
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                      className="flex items-center text-gray-700 hover:text-blue-600 p-2 rounded-full transition-colors"
                     >
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-medium text-sm">
                           {getInitials(patientInfo.name)}
                         </span>
                       </div>
-                      <span>{getFirstName(patientInfo.name)}</span>
-                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 ml-1 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
 
                     {/* User Dropdown */}
                     {userMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                         <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
                           <div className="font-medium text-gray-900">{patientInfo.name}</div>
                           <div>{patientInfo.email}</div>
                         </div>
-                        <Link href="/patient/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <Link 
+                          href="/patient/dashboard" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
                           Dashboard
                         </Link>
-                        <Link href="/patient/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <Link 
+                          href="/patient/profile" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
                           Profile
                         </Link>
-                        <Link href="/patient/appointments" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <Link 
+                          href="/patient/appointments" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
                           My Appointments
                         </Link>
                         <div className="border-t border-gray-100"></div>
                         <button
-                          onClick={logout}
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           Sign Out
@@ -137,17 +163,17 @@ export function SharedHeader({
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2 md:space-x-4">
                     <Button
                       onClick={handleSignIn}
                       variant="outline"
-                      className="text-gray-700 border-gray-300 hover:bg-gray-50"
+                      className="text-gray-700 border-gray-300 hover:bg-gray-50 text-xs md:text-sm px-2 md:px-4"
                     >
                       Sign In
                     </Button>
                     <Button
                       onClick={handleSignUp}
-                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      className="bg-blue-600 text-white hover:bg-blue-700 text-xs md:text-sm px-2 md:px-4"
                     >
                       Sign Up
                     </Button>

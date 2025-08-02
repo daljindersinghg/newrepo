@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { useAuth } from '@/providers/AuthProvider';
 import { appointmentApi, Appointment } from '@/lib/api/appointments';
-import AppointmentStatus from '@/components/appointments/AppointmentStatus';
+import AppointmentStatusBadge from '@/components/appointments/AppointmentStatusBadge';
 import { format } from 'date-fns';
 import { SharedHeader } from '@/components/shared/SharedHeader';
 
@@ -203,7 +203,7 @@ export default function PatientDashboard() {
                           </p>
                         )}
                       </div>
-                      <AppointmentStatus status={appointment.status} />
+                      <AppointmentStatusBadge status={appointment.status} />
                     </div>
                     
                     {appointment.type === 'emergency' && (

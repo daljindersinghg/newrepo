@@ -1,189 +1,250 @@
 'use client';
 
 import { useState } from 'react';
-import { useNotifications } from '@/contexts/NotificationContext';
+import { Button } from '@/components/ui/button';
+import { useNotificationContext } from '@/providers/NotificationProvider';
+import { Bell, BellOff, Settings, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
-export function NotificationSettings() {
-  const { settings, updateSettings, requestBrowserPermission } = useNotifications();
-  const [saving, setSaving] = useState(false);
+interface NotificationSettingsProps {
+  clinicId: string;
+  className?: string;
+}
 
-  const handleToggle = async (key: keyof typeof settings) => {
-    setSaving(true);
-    
-    // If enabling browser notifications, request permission first
-    if (key === 'browserNotifications' && !settings[key]) {
-      const permission = await requestBrowserPermission();
-      if (permission !== 'granted') {
-        setSaving(false);
-        alert('Browser notification permission is required to enable notifications.');
-        return;
+export function NotificationSettings({ clinicId, className = "" }: NotificationSettingsProps) {
+  const {
+    isEnabled,
+    fcmToken,
+    notifications,
+    unreadCount,
+    isLoading,
+    error,
+    enableNotifications,
+    disableNotifications,
+    markAllAsRead,
+    clearNotifications
+  } = useNotificationContext();
+
+  const [isToggling, setIsToggling] = useState(false);
+
+  const handleToggleNotifications = async () => {
+    setIsToggling(true);
+    try {
+      if (isEnabled) {
+        await disableNotifications(clinicId);
+      } else {
+        await enableNotifications(clinicId);
       }
+    } catch (error) {
+      console.error('Failed to toggle notifications:', error);
+    } finally {
+      setIsToggling(false);
     }
-    
-    updateSettings({ [key]: !settings[key] });
-    setSaving(false);
   };
 
-  const settingsConfig = [
-    {
-      key: 'browserNotifications' as const,
-      title: 'Browser Notifications',
-      description: 'Show desktop notifications when you receive new appointment requests or responses',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 01-15 0V9.825a1 1 0 011-1h2.175" />
-        </svg>
-      )
-    },
-    {
-      key: 'emailNotifications' as const,
-      title: 'Email Notifications',
-      description: 'Receive email notifications for important updates',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      key: 'appointmentRequests' as const,
-      title: 'New Appointment Requests',
-      description: 'Get notified when patients request new appointments',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v8a3 3 0 01-3 3H6a3 3 0 01-3-3V8a1 1 0 011-1h3z" />
-        </svg>
-      )
-    },
-    {
-      key: 'patientResponses' as const,
-      title: 'Patient Responses',
-      description: 'Get notified when patients respond to your counter-offers',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-      )
-    },
-    {
-      key: 'cancellations' as const,
-      title: 'Appointment Cancellations',
-      description: 'Get notified when appointments are cancelled',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      )
-    },
-    {
-      key: 'reminders' as const,
-      title: 'Appointment Reminders',
-      description: 'Get reminders about upcoming confirmed appointments',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      )
-    }
-  ];
+  const handleClearNotifications = () => {
+    clearNotifications();
+  };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Notification Settings</h3>
-        <p className="text-sm text-gray-600 mt-1">
-          Manage how you receive notifications about appointment requests and updates.
-        </p>
-      </div>
-
-      <div className="p-6 space-y-6">
-        {settingsConfig.map((setting) => (
-          <div key={setting.key} className="flex items-start justify-between">
-            <div className="flex items-start space-x-3">
-              <div className="text-gray-400 mt-1">
-                {setting.icon}
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-900">
-                  {setting.title}
-                </h4>
-                <p className="text-sm text-gray-600 mt-1">
-                  {setting.description}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleToggle(setting.key)}
-              className={`
-                relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
-                transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-                ${settings[setting.key] ? 'bg-green-600' : 'bg-gray-200'}
-                ${saving ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
-            >
-              <span className="sr-only">Toggle {setting.title}</span>
-              <span
-                className={`
-                  pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 
-                  transition duration-200 ease-in-out
-                  ${settings[setting.key] ? 'translate-x-5' : 'translate-x-0'}
-                `}
-              />
-            </button>
+    <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
+      <div className="p-6">
+        <div className="flex items-center mb-6">
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+            <Bell className="h-5 w-5 text-blue-600" />
           </div>
-        ))}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Push Notifications</h3>
+            <p className="text-sm text-gray-500">Manage your appointment notification preferences</p>
+          </div>
+        </div>
 
-        {/* Browser Notification Status */}
-        {typeof window !== 'undefined' && 'Notification' in window && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        {/* Notification Status */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center">
-              <svg className="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              {isEnabled ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Notifications Enabled</p>
+                    <p className="text-sm text-gray-500">You'll receive push notifications for new appointments</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-5 w-5 text-gray-400 mr-3" />
+                  <div>
+                    <p className="font-medium text-gray-900">Notifications Disabled</p>
+                    <p className="text-sm text-gray-500">Enable to receive appointment alerts</p>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <Button
+              onClick={handleToggleNotifications}
+              disabled={isLoading || isToggling}
+              variant={isEnabled ? "outline" : "default"}
+              className={isEnabled ? "border-red-300 text-red-600 hover:bg-red-50" : "bg-blue-600 text-white hover:bg-blue-700"}
+            >
+              {(isLoading || isToggling) ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                  {isEnabled ? 'Disabling...' : 'Enabling...'}
+                </div>
+              ) : (
+                <>
+                  {isEnabled ? (
+                    <>
+                      <BellOff className="h-4 w-4 mr-2" />
+                      Disable
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="h-4 w-4 mr-2" />
+                      Enable
+                    </>
+                  )}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-3" />
               <div>
-                <p className="text-sm font-medium text-blue-900">
-                  Browser Notifications: {Notification.permission === 'granted' ? 'Enabled' : 
-                                        Notification.permission === 'denied' ? 'Blocked' : 'Not Enabled'}
-                </p>
-                {Notification.permission === 'denied' && (
-                  <p className="text-xs text-blue-700 mt-1">
-                    To enable browser notifications, please check your browser settings and allow notifications for this site.
-                  </p>
-                )}
-                {Notification.permission === 'default' && (
-                  <p className="text-xs text-blue-700 mt-1">
-                    Click the Browser Notifications toggle above to enable desktop notifications.
-                  </p>
-                )}
+                <p className="font-medium text-red-800">Error</p>
+                <p className="text-sm text-red-700">{error}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Test Notification Button */}
-        <div className="pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={async () => {
-              if (settings.browserNotifications) {
-                const permission = await requestBrowserPermission();
-                if (permission === 'granted') {
-                  new Notification('Test Notification', {
-                    body: 'Browser notifications are working correctly!',
-                    icon: '/icons/notification-icon.png'
-                  });
-                }
-              } else {
-                alert('Please enable browser notifications first.');
-              }
-            }}
-            className="text-sm text-green-600 hover:text-green-700 font-medium"
-          >
-            Test Browser Notification
-          </button>
+        {/* Notification Statistics */}
+        {isEnabled && (
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-2xl font-bold text-blue-600">{notifications.length}</p>
+              <p className="text-sm text-blue-800">Total Notifications</p>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <p className="text-2xl font-bold text-orange-600">{unreadCount}</p>
+              <p className="text-sm text-orange-800">Unread</p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <p className="text-2xl font-bold text-green-600">{notifications.length - unreadCount}</p>
+              <p className="text-sm text-green-800">Read</p>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Actions */}
+        {isEnabled && notifications.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900">Notification Management</h4>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={markAllAsRead}
+                variant="outline"
+                disabled={unreadCount === 0}
+                className="flex-1"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark All as Read {unreadCount > 0 && `(${unreadCount})`}
+              </Button>
+              <Button
+                onClick={handleClearNotifications}
+                variant="outline"
+                className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Clear All Notifications
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Types */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="font-medium text-gray-900 mb-3">Notification Types</h4>
+          <div className="space-y-3 text-sm text-gray-600">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
+              <span>New appointment bookings</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-orange-600 rounded-full mr-3"></div>
+              <span>Appointment cancellations</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-green-600 rounded-full mr-3"></div>
+              <span>Appointment rescheduling</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-purple-600 rounded-full mr-3"></div>
+              <span>Appointment reminders</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Technical Info */}
+        {isEnabled && fcmToken && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <details className="group">
+              <summary className="flex items-center cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+                <Settings className="h-4 w-4 mr-2" />
+                Technical Details
+                <svg className="w-4 h-4 ml-2 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <div className="mt-3 p-3 bg-gray-50 rounded text-xs text-gray-500 font-mono break-all">
+                <p><strong>FCM Token:</strong></p>
+                <p className="mt-1">{fcmToken}</p>
+              </div>
+            </details>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Compact version for dashboard widgets
+export function NotificationStatusWidget({ clinicId, className = "" }: NotificationSettingsProps) {
+  const { isEnabled, unreadCount, isLoading } = useNotificationContext();
+
+  return (
+    <div className={`bg-white p-4 rounded-lg border border-gray-200 ${className}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+            isEnabled ? 'bg-green-100' : 'bg-gray-100'
+          }`}>
+            {isEnabled ? (
+              <Bell className="h-4 w-4 text-green-600" />
+            ) : (
+              <BellOff className="h-4 w-4 text-gray-400" />
+            )}
+          </div>
+          <div className="ml-3">
+            <p className="text-sm font-medium text-gray-900">
+              Push Notifications
+            </p>
+            <p className="text-xs text-gray-500">
+              {isEnabled ? `${unreadCount} unread` : 'Disabled'}
+            </p>
+          </div>
+        </div>
+        
+        <div className={`px-2 py-1 text-xs rounded-full ${
+          isEnabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {isLoading ? 'Loading...' : (isEnabled ? 'Active' : 'Inactive')}
         </div>
       </div>
     </div>

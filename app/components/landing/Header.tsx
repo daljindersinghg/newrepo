@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { SharedHeader } from '@/components/shared/SharedHeader';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
   const { showAuthModal } = useAuth();
@@ -209,7 +210,10 @@ export function Header() {
                 ) : (
                   <div className="border-t border-gray-200 pt-4 pb-4 mt-4 space-y-3">
                     <Button
-                      onClick={handleSignIn}
+                      onClick={() => {
+                        handleSignIn();
+                        setMobileMenuOpen(false);
+                      }}
                       variant="outline"
                       className="w-full h-12 text-base font-medium border-2 border-blue-600 text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
                       type="button"
