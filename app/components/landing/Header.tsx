@@ -94,7 +94,7 @@ export function Header() {
                 {/* Clinic Login for Mobile */}
                 <div className="border-t border-gray-200 pt-4">
                   <Link 
-                    href="/clinic/login" 
+                    href="/clinic" 
                     className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600"
                   >
                     Dentist Login

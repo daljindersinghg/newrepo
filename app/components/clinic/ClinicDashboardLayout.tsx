@@ -9,6 +9,7 @@ import { ClinicPendingTab } from './ClinicPendingTab';
 import { ClinicCalendarTab } from './ClinicCalendarTab';
 import { ClinicPatientsTab } from './ClinicPatientsTab';
 import { ClinicSettingsTab } from './ClinicSettingsTab';
+import { NotificationDropdown } from './NotificationDropdown';
 
 type ClinicTab = 'overview' | 'appointments' | 'pending' | 'calendar' | 'patients' | 'settings';
 
@@ -107,18 +108,8 @@ export function ClinicDashboardLayout() {
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* Notification Bell */}
-              <button 
-                type="button"
-                className="p-2 text-gray-400 hover:text-gray-600 relative"
-                title="Notifications"
-                aria-label="View notifications"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-5 5-5-5h5V9a4 4 0 00-8 0v8h5l-5 5-5-5h5z" />
-                </svg>
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+              {/* Notification Dropdown */}
+              <NotificationDropdown />
               
               {/* Help */}
               <button 
