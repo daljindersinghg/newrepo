@@ -106,7 +106,15 @@ export function EnhancedSearchHero() {
           Find Dentists Near You
         </span>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
-          Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">Perfect Dentist</span><br />
+          <span
+            className="text-transparent bg-clip-text"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, #51ade5, #81d7f6, #51ade5, #b4e7f5)",
+            }}
+          >
+            Perfect Dentist
+          </span><br />
           Is Just a Search Away
         </h1>
         <p className="text-gray-600 text-sm sm:text-base max-w-sm mx-auto">
