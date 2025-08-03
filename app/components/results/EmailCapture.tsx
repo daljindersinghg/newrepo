@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useAppConfig } from '@/hooks/useAppConfig';
 
 interface EmailCaptureProps {
   onSubmit: (email: string) => void;
@@ -14,6 +15,7 @@ export function EmailCapture({ onSubmit, clinicCount, location }: EmailCapturePr
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
+  const { giftCard } = useAppConfig();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +52,8 @@ export function EmailCapture({ onSubmit, clinicCount, location }: EmailCapturePr
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             View {clinicCount} Dental Clinics
           </h2>
-          <p className="text-gray-600">
-            Enter your email to see verified dental clinics in {location} and get your $50 gift card info
+                    <p className="text-gray-600">
+            Enter your email to see verified dental clinics in {location} and get your {giftCard.full} info
           </p>
         </div>
 
@@ -96,7 +98,7 @@ export function EmailCapture({ onSubmit, clinicCount, location }: EmailCapturePr
             <svg className="w-4 h-4 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
             </svg>
-            Get $50 gift card after your first appointment
+            Get {giftCard.getMessage('signup')}
           </div>
           <div className="flex items-center text-sm text-gray-600">
             <svg className="w-4 h-4 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">

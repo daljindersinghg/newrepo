@@ -1,11 +1,13 @@
 // src/components/landing/TrustSection.tsx
+import { getFullGiftCardText } from '@/lib/config/app-config';
+
 export function TrustSection() {
   const testimonials = [
     {
       name: "Sarah Mitchell",
       location: "New York, NY",
       rating: 5,
-      text: "Amazing experience! Found a great dentist near me within minutes and got my $50 gift card after the appointment. The booking process was so smooth.",
+      text: `Amazing experience! Found a great dentist near me within minutes and got my ${getFullGiftCardText()} after the appointment. The booking process was so smooth.`,
       avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face"
     },
     {

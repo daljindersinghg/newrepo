@@ -6,10 +6,12 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
+import { useAppConfig } from '@/hooks/useAppConfig';
 
 export function AuthModal() {
   const { authModal, hideAuthModal } = useAuth();
   const [currentAction, setCurrentAction] = useState<'login' | 'signup'>('login');
+  const { giftCard } = useAppConfig();
 
   useEffect(() => {
     setCurrentAction(authModal.action);
@@ -98,7 +100,7 @@ export function AuthModal() {
               <svg className="w-4 h-4 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="font-medium">$50 gift card</span> after your first appointment
+              <span className="font-medium">{giftCard.full}</span> after your first appointment
             </div>
             <div className="flex items-start text-sm text-blue-800">
               <svg className="w-4 h-4 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

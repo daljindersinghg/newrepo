@@ -73,19 +73,7 @@ export function HowItWorks({ rewardAmount }: HowItWorksProps) {
           ))}
         </div>
 
-        <div className="mt-16 bg-white border border-gray-200 rounded-xl shadow-inner p-8 max-w-3xl mx-auto">
-          <div className="flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-accent mr-2" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-            </svg>
-            <span className="text-2xl font-bold text-gray-800">
-              {rewardAmount} Gift Card
-            </span>
-          </div>
-          <p className="text-gray-600">
-            Book your first appointment through our platform and receive a {rewardAmount} gift card after your visit!
-          </p>
-        </div>
+     
       </div>
     </section>
   );

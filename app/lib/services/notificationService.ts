@@ -148,16 +148,6 @@ class NotificationService {
       badge: '/logo.png',
       tag: `appointment-${notification.id}`,
       requireInteraction: true,
-      actions: [
-        {
-          action: 'view',
-          title: 'View Details'
-        },
-        {
-          action: 'dismiss',
-          title: 'Dismiss'
-        }
-      ],
       data: {
         appointmentId: notification.id,
         clinicId: notification.clinicId,

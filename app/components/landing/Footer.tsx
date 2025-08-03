@@ -1,4 +1,6 @@
 // src/components/landing/Footer.tsx
+import { getFullGiftCardText } from '@/lib/config/app-config';
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -18,7 +20,7 @@ export function Footer() {
               <span className="text-2xl font-bold">DentalBook</span>
             </div>
             <p className="text-gray-300 mb-4">
-              Find and book dental appointments. Get $50 gift card for your first visit.
+              Find and book dental appointments. Get {getFullGiftCardText()} for your first visit.
             </p>
           </div>
 
@@ -63,7 +65,7 @@ export function Footer() {
           {/* Simple Legal Text */}
           <div className="mt-4 text-xs text-gray-500">
             <p>
-              *$50 gift card for new patients after first appointment. Terms apply.
+              *{getFullGiftCardText()} for new patients after first appointment. Terms apply.
             </p>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { clinicApi, ClinicSearchFilters } from '@/lib/api/clinic';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { SharedHeader } from '@/components/shared/SharedHeader';
+import { useAppConfig } from '@/hooks/useAppConfig';
 
 interface Clinic {
   _id: string;
@@ -87,6 +88,7 @@ export function ClinicResults() {
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('');
   const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const { giftCard } = useAppConfig();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   
@@ -413,7 +415,7 @@ export function ClinicResults() {
                 Ready to Book an Appointment?
               </h2>
               <p className="text-gray-600">
-                Sign up now to book appointments and get your $50 gift card!
+                Sign up now to book appointments and get your {giftCard.full}!
               </p>
             </div>
 
@@ -548,7 +550,7 @@ export function ClinicResults() {
                   Ready to Book Your Appointment?
                 </h3>
                 <p className="text-gray-600 mb-4 text-sm">
-                  Get your $50 gift card after your first visit through our platform
+                  Get your {giftCard.full} after your first visit through our platform
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm">
                   <div className="flex items-center text-green-600">

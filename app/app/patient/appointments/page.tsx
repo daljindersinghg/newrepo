@@ -99,9 +99,9 @@ export default function PatientAppointments() {
               <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
               <p className="text-gray-600 mt-1">Track and manage your appointment requests</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-col-reverse md:flex-row">
               <Link
-                href="/patient/dashboard"
+                href="/"
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 ← Back

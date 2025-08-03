@@ -1,3 +1,4 @@
+import { getGiftCardAmount, getGiftCardText } from '@/lib/config/app-config';
 
 export function CTASection() {
   return (
@@ -52,7 +53,7 @@ export function CTASection() {
               </svg>
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-slate-800">$50 Gift Card</h3>
+              <h3 className="text-2xl font-bold text-slate-800">{getGiftCardAmount()} {getGiftCardText().charAt(0).toUpperCase() + getGiftCardText().slice(1)}</h3>
               <p className="text-slate-600">After your first appointment</p>
             </div>
           </div>
@@ -68,7 +69,7 @@ export function CTASection() {
             </div>
             <div className="bg-white/30 rounded-lg p-4">
               <div className="text-3xl font-bold text-slate-800 mb-2">3</div>
-              <div className="text-slate-700">Get $50 gift card</div>
+              <div className="text-slate-700">Get {getGiftCardAmount()} {getGiftCardText()}</div>
             </div>
           </div>
         </div>

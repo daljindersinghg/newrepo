@@ -1,30 +1,70 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getMessaging, getToken, onMessage, MessagePayload } from 'firebase/messaging';
 
+// Validate Firebase configuration
+const requiredEnvVars = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID',
+];
+
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.warn('Missing Firebase environment variables:', missingVars);
+  console.warn('Push notifications will be disabled');
+}
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
 };
 
-// Initialize Firebase
-const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Only initialize Firebase if configuration is complete
+let firebaseApp: any = null;
+
+try {
+  if (missingVars.length === 0) {
+    firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    console.log('Firebase initialized successfully');
+  } else {
+    console.warn('Firebase not initialized due to missing configuration');
+  }
+} catch (error) {
+  console.error('Failed to initialize Firebase:', error);
+}
 
 // Initialize Firebase Cloud Messaging and get a reference to the service
 let messaging: any = null;
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && firebaseApp) {
   try {
     messaging = getMessaging(firebaseApp);
+    console.log('Firebase messaging initialized successfully');
   } catch (error) {
     console.error('Firebase messaging initialization error:', error);
+    console.warn('Push notifications will not be available');
   }
 }
 
 export { firebaseApp, messaging };
+
+// Utility function to check if Firebase is properly configured
+export const isFirebaseConfigured = (): boolean => {
+  return firebaseApp !== null && missingVars.length === 0;
+};
+
+// Utility function to check if messaging is available
+export const isMessagingAvailable = (): boolean => {
+  return messaging !== null && isFirebaseConfigured();
+};
 
 // Function to get FCM token
 export const getMessagingToken = async (): Promise<string | null> => {

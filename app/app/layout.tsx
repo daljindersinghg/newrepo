@@ -7,6 +7,7 @@ import { AuthProvider } from '@/providers/AuthProvider'
 import { AuthModal } from '@/components/auth/AuthModal'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { getFullGiftCardText } from '@/lib/config/app-config'
 
 const geistSans = Geist({ 
   variable: '--font-geist-sans', 
@@ -20,9 +21,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'DentalCare+ | Find & Book Dentist Appointments Online | $50 Gift Card',
+  title: `DentalCare+ | Find & Book Dentist Appointments Online | ${getFullGiftCardText()}`,
   description:
-    'Find and book dentist appointments online with DentalCare+. Get a $50 gift card when you book. Compare verified dentists, read reviews, and book instantly.',
+    `Find and book dentist appointments online with DentalCare+. Get a ${getFullGiftCardText()} when you book. Compare verified dentists, read reviews, and book instantly.`,
   keywords: [
     'dentist',
     'dental appointment',
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'DentalCare+ | Book Dentist Appointments Online',
     description:
-      'Trusted dentists, instant booking & same-day availability. Get your $50 gift card when you book.',
+      `Trusted dentists, instant booking & same-day availability. Get your ${getFullGiftCardText()} when you book.`,
     url: 'https://dentistnearme.ai',
     siteName: 'DentalCare+',
     images: [
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'DentalCare+ | Book Dentist Appointments Online',
     description:
-      'Trusted dentists, instant booking & same-day availability. Get your $50 gift card when you book.',
+      `Trusted dentists, instant booking & same-day availability. Get your ${getFullGiftCardText()} when you book.`,
     images: ['https://dentistnearme.ai/twitter-image.jpg'],
   },
   // tell crawlers where to find your sitemap

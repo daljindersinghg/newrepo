@@ -342,12 +342,23 @@ export function GooglePlacesAutocomplete({
       {/* Main Input with Location Icon */}
       <div className="relative">
         {/* Location Icon */}
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-        </div>
+        </div> */}
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-blue-50 text-blue-600">
+            <svg 
+              className="w-4 h-4" 
+              fill="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          </div>
 
         <input
           ref={inputRef}
@@ -367,7 +378,7 @@ export function GooglePlacesAutocomplete({
         {/* Right Side - Status Indicator & Current Location Button */}
         <div className="absolute inset-y-0 right-0 flex items-center pr-1">
           {/* Status Indicator */}
-          <div className="mr-2">
+          {/* <div className="mr-2">
             {state.isLoading || state.isGettingLocation ? (
               <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -384,10 +395,10 @@ export function GooglePlacesAutocomplete({
                 ✓
               </span>
             ) : null}
-          </div>
+          </div> */}
 
           {/* Current Location Button */}
-          {showCurrentLocationButton && (
+          {/* {showCurrentLocationButton && (
             <button
               type="button"
               onClick={getCurrentLocation}
@@ -406,7 +417,7 @@ export function GooglePlacesAutocomplete({
                 </svg>
               )}
             </button>
-          )}
+          )} */}
         </div>
       </div>
 

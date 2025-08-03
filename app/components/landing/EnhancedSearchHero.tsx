@@ -1,4 +1,3 @@
-
 // components/landing/EnhancedSearchHero.tsx
 'use client';
 
@@ -129,11 +128,17 @@ export function EnhancedSearchHero() {
           <span className="font-semibold text-lg">Where are you located?</span>
         </label>
 
-        <GooglePlacesAutocomplete
-          placeholder="Type address, city, or ZIP"
-          onPlaceSelect={handleLocationSelect}
-          className="w-full h-12 px-4 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
-        />
+        {/* Search Input with Location Icon */}
+        <div className="relative">
+          <GooglePlacesAutocomplete
+            placeholder="Type address, city, or ZIP"
+            onPlaceSelect={handleLocationSelect}
+            className="w-full h-12 px-4 pr-12 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+          />
+          
+          {/* Location Icon */}
+        
+        </div>
 
         {/* Recent Searches */}
         {!selectedLocation && recent.length > 0 && (
