@@ -22,6 +22,10 @@ export function ClinicDashboardLayout() {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  const handleTabChange = (tab: ClinicTab) => {
+    setActiveTab(tab);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -79,7 +83,7 @@ export function ClinicDashboardLayout() {
       {/* Sidebar */}
       <ClinicSidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

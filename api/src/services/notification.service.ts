@@ -1,6 +1,7 @@
 import { Notification, IAppointment, Patient, Clinic } from '../models';
 import logger from '../config/logger.config';
 import { EmailService } from './email.service';
+import { firebaseService } from './firebase.service';
 
 export class NotificationService {
   static async sendAppointmentRequest(appointment: IAppointment) {
@@ -25,6 +26,15 @@ export class NotificationService {
       });
 
       await notification.save();
+
+      // Send push notification to clinic
+      await firebaseService.sendAppointmentNotification(String(clinic._id), {
+        appointmentId: String(appointment._id),
+        patientName: patient.name || patient.email,
+        appointmentDate: appointment.originalRequest.requestedDate.toDateString(),
+        appointmentTime: appointment.originalRequest.requestedTime,
+        type: 'new_appointment'
+      });
       
       // TODO: Send email notification
       // await this.sendEmail(clinic.email, notification.title, notification.message);
@@ -402,23 +412,19 @@ export class NotificationService {
     payload: any
   ): Promise<{ success: boolean; message: string; sentTo?: string[] }> {
     try {
-      // In a real implementation, this would:
-      // 1. Look up clinic staff/admin users associated with the clinic
-      // 2. Get their push notification tokens/subscriptions
-      // 3. Send notifications via FCM, web push, or similar service
+      // Use Firebase service to send actual push notifications
+      const result = await firebaseService.sendNotificationToClinic(clinicId, {
+        title: payload.title,
+        body: payload.body,
+        data: payload.data
+      });
       
-      console.log(`🔔 Browser notification for clinic ${clinicId}:`, payload);
-      
-      // Simulate sending to clinic staff
-      // In production, you would integrate with:
-      // - Firebase Cloud Messaging for web push notifications
-      // - Web Push Protocol for browser notifications
-      // - Service worker for offline notification handling
+      logger.info(`🔔 Browser notification for clinic ${clinicId}:`, payload.title);
       
       return {
-        success: true,
-        message: 'Browser notification sent successfully',
-        sentTo: [`clinic-${clinicId}-staff`]
+        success: result.success,
+        message: result.message,
+        sentTo: result.results?.map(r => r.token) || []
       };
     } catch (error: any) {
       logger.error('Failed to send browser notification:', error);

@@ -2,7 +2,7 @@
 
 import { useClinicAuth } from '@/hooks/useClinicAuth';
 
-type ClinicTab = 'overview' | 'appointments' | 'pending' | 'calendar' | 'patients' | 'settings';
+type ClinicTab = 'overview' | 'appointments' | 'pending' | 'calendar' | 'patients' | 'settings' | 'debug';
 
 interface ClinicSidebarProps {
   activeTab: ClinicTab;

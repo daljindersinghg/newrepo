@@ -25,4 +25,9 @@ notificationRouter.delete('/:notificationId', NotificationController.deleteNotif
 // Check email service status (for testing/debugging)
 notificationRouter.get('/email-status', NotificationController.checkEmailStatus);
 
+// FCM token management endpoints
+notificationRouter.post('/token', NotificationController.saveToken);
+notificationRouter.delete('/token', NotificationController.removeToken);
+notificationRouter.get('/tokens', NotificationController.getActiveTokens);
+
 export default notificationRouter;
