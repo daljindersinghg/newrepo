@@ -1,4 +1,4 @@
-import { getMessagingToken } from '../firebase/config';
+// NOTIFICATIONS DISABLED - All notification functionality commented out
 
 export interface NotificationPermissionStatus {
   granted: boolean;
@@ -22,7 +22,8 @@ class NotificationService {
   private isSupported: boolean = false;
 
   constructor() {
-    this.checkSupport();
+    console.log('🚫 NotificationService: Notifications are disabled');
+    this.isSupported = false;
   }
 
   public static getInstance(): NotificationService {
@@ -32,188 +33,49 @@ class NotificationService {
     return NotificationService.instance;
   }
 
-  private checkSupport(): void {
-    this.isSupported = 
-      'serviceWorker' in navigator && 
-      'PushManager' in window && 
-      'Notification' in window;
-  }
-
   public isNotificationSupported(): boolean {
-    return this.isSupported;
+    console.log('🚫 Notification support check: Disabled');
+    return false;
   }
 
   public async getPermissionStatus(): Promise<NotificationPermissionStatus> {
-    if (!this.isSupported) {
-      return { granted: false, denied: true, default: false };
-    }
-
-    const permission = Notification.permission;
-    return {
-      granted: permission === 'granted',
-      denied: permission === 'denied',
-      default: permission === 'default'
-    };
+    console.log('🚫 Permission status: Disabled');
+    return { granted: false, denied: true, default: false };
   }
 
   public async requestPermission(): Promise<NotificationPermission> {
-    if (!this.isSupported) {
-      throw new Error('Notifications are not supported in this browser');
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      return permission;
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
-      throw error;
-    }
+    console.log('🚫 Permission request: Disabled');
+    return 'denied';
   }
 
   public async initializeNotifications(clinicId: string): Promise<string | null> {
-    try {
-      // For clinic IDs, be more persistent about getting permission
-      const isClinic = clinicId.includes('clinic') || clinicId.length > 10;
-      
-      let permission = await this.requestPermission();
-      
-      // If clinic and permission is default, try requesting again
-      if (isClinic && permission === 'default') {
-        console.log('Clinic detected - retrying permission request...');
-        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay
-        permission = await this.requestPermission();
-      }
-      
-      if (permission !== 'granted') {
-        console.warn('Notification permission not granted for clinic:', clinicId);
-        return null;
-      }
-
-      // Register service worker
-      await this.registerServiceWorker();
-
-      // Get FCM token
-      this.fcmToken = await getMessagingToken();
-      
-      if (this.fcmToken) {
-        // Store token on server associated with clinic
-        await this.saveTokenToServer(this.fcmToken, clinicId);
-        console.log('✅ Clinic notifications initialized successfully:', clinicId);
-      }
-
-      return this.fcmToken;
-    } catch (error) {
-      console.error('Error initializing notifications for clinic:', clinicId, error);
-      throw error;
-    }
+    console.log('🚫 Initialize notifications: Disabled for clinic', clinicId);
+    return null;
   }
 
-  private async registerServiceWorker(): Promise<void> {
-    if ('serviceWorker' in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-        console.log('Service Worker registered:', registration);
-      } catch (error) {
-        console.error('Service Worker registration failed:', error);
-        throw error;
-      }
-    }
+  public async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+    console.log('🚫 Service worker registration: Disabled');
+    return null;
   }
 
-  private async saveTokenToServer(token: string, clinicId: string): Promise<void> {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          clinicId,
-          platform: 'web',
-          userAgent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save token to server');
-      }
-
-      console.log('Token saved to server successfully');
-    } catch (error) {
-      console.error('Error saving token to server:', error);
-      // Don't throw here as the token is still valid locally
-    }
+  public async saveTokenToServer(token: string, clinicId: string): Promise<boolean> {
+    console.log('🚫 Save token to server: Disabled', { token: token.substring(0, 20) + '...', clinicId });
+    return false;
   }
 
   public async showLocalNotification(notification: AppointmentNotification): Promise<void> {
-    if (!this.isSupported || Notification.permission !== 'granted') {
-      return;
-    }
-
-    const notificationOptions: NotificationOptions = {
-      body: notification.message,
-      icon: '/NearMe .Ai (350 x 180 px).png',
-      badge: '/logo.png',
-      tag: `appointment-${notification.id}`,
-      requireInteraction: true,
-      data: {
-        appointmentId: notification.id,
-        clinicId: notification.clinicId,
-        type: notification.type,
-        url: `/clinic/appointments/${notification.id}`
-      }
-    };
-
-    const title = this.getNotificationTitle(notification.type);
-    
-    try {
-      new Notification(title, notificationOptions);
-    } catch (error) {
-      console.error('Error showing notification:', error);
-    }
-  }
-
-  private getNotificationTitle(type: AppointmentNotification['type']): string {
-    switch (type) {
-      case 'new_appointment':
-        return 'New Appointment Booked';
-      case 'appointment_reminder':
-        return 'Appointment Reminder';
-      case 'appointment_cancelled':
-        return 'Appointment Cancelled';
-      case 'appointment_rescheduled':
-        return 'Appointment Rescheduled';
-      default:
-        return 'Appointment Notification';
-    }
+    console.log('🚫 Local notification: Disabled', notification);
+    return;
   }
 
   public async unsubscribe(clinicId: string): Promise<void> {
-    try {
-      if (this.fcmToken) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/token`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            token: this.fcmToken,
-            clinicId,
-          }),
-        });
-      }
-
-      this.fcmToken = null;
-      console.log('Unsubscribed from notifications');
-    } catch (error) {
-      console.error('Error unsubscribing from notifications:', error);
-    }
+    console.log('🚫 Unsubscribe: Disabled for clinic', clinicId);
+    return;
   }
 
   public getFCMToken(): string | null {
-    return this.fcmToken;
+    console.log('🚫 FCM token: Disabled');
+    return null;
   }
 }
 

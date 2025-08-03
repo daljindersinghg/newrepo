@@ -208,13 +208,15 @@ export function ClinicDashboardLayout() {
         </main>
       </div>
       
-      {/* Auto-enable notifications for clinics */}
+      {/* Auto-enable notifications for clinics - DISABLED */}
+      {/* 
       {clinic?.id && (
         <ClinicAutoNotifications 
           clinicId={clinic.id} 
           autoEnable={true} 
         />
       )}
+      */}
     </div>
   );
 }

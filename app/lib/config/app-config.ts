@@ -6,8 +6,8 @@ export const GIFT_CARD_AMOUNT = 510;           // Change this number to update a
 export const GIFT_CARD_TEXT = "gift cadsard";    // Change this text (e.g., "Amazon gift card", "gift card", etc.)
 
 // ===== NOTIFICATION SETTINGS =====
-export const AUTO_ENABLE_CLINIC_NOTIFICATIONS = true;  // Auto-enable notifications for clinics
-export const AUTO_ENABLE_PATIENT_NOTIFICATIONS = false; // Auto-enable notifications for patients
+export const AUTO_ENABLE_CLINIC_NOTIFICATIONS = false;  // DISABLED - Auto-enable notifications for clinics
+export const AUTO_ENABLE_PATIENT_NOTIFICATIONS = false; // DISABLED - Auto-enable notifications for patients
 
 // ===== AUTO-GENERATED VALUES (Don't change these) =====
 export const getGiftCardAmount = () => `$${GIFT_CARD_AMOUNT}`;

@@ -1,5 +1,4 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, getToken, onMessage, MessagePayload } from 'firebase/messaging';
+// NOTIFICATIONS DISABLED - All Firebase messaging functionality commented out
 
 // Validate Firebase configuration
 const requiredEnvVars = [
@@ -13,6 +12,12 @@ const requiredEnvVars = [
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
+// Debug: Log all Firebase environment variables
+console.log('🔧 Firebase Environment Variables Check (NOTIFICATIONS DISABLED):');
+console.log('🚫 Notifications are disabled across the application');
+
+/*
+// DISABLED - Firebase initialization
 if (missingVars.length > 0) {
   console.warn('Missing Firebase environment variables:', missingVars);
   console.warn('Push notifications will be disabled');
@@ -40,81 +45,42 @@ try {
 } catch (error) {
   console.error('Failed to initialize Firebase:', error);
 }
+*/
 
-// Initialize Firebase Cloud Messaging and get a reference to the service
-let messaging: any = null;
+// DISABLED - Firebase messaging
+const firebaseApp: any = null;
+const messaging: any = null;
 
-if (typeof window !== 'undefined' && firebaseApp) {
-  try {
-    messaging = getMessaging(firebaseApp);
-    console.log('Firebase messaging initialized successfully');
-  } catch (error) {
-    console.error('Firebase messaging initialization error:', error);
-    console.warn('Push notifications will not be available');
-  }
-}
+console.log('🚫 Firebase messaging is disabled');
 
 export { firebaseApp, messaging };
 
 // Utility function to check if Firebase is properly configured
 export const isFirebaseConfigured = (): boolean => {
-  return firebaseApp !== null && missingVars.length === 0;
+  console.log('🚫 Firebase is disabled - returning false');
+  return false;
 };
 
 // Utility function to check if messaging is available
 export const isMessagingAvailable = (): boolean => {
-  return messaging !== null && isFirebaseConfigured();
+  console.log('🚫 Messaging is disabled - returning false');
+  return false;
 };
 
-// Function to get FCM token
+// Function to get FCM token - DISABLED
 export const getMessagingToken = async (): Promise<string | null> => {
-  if (!messaging) {
-    console.warn('Firebase messaging not initialized');
-    return null;
-  }
-
-  try {
-    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-    if (!vapidKey) {
-      console.error('VAPID key not configured');
-      return null;
-    }
-
-    const token = await getToken(messaging, { vapidKey });
-    return token;
-  } catch (error) {
-    console.error('Error getting messaging token:', error);
-    return null;
-  }
+  console.log('🚫 FCM token disabled - returning null');
+  return null;
 };
 
-// Function to handle foreground messages
-export const onMessageListener = (callback: (payload: MessagePayload) => void): (() => void) => {
-  if (!messaging) {
-    console.warn('Firebase messaging not initialized');
-    return () => {};
-  }
-
-  // onMessage returns an unsubscribe function
-  const unsubscribe = onMessage(messaging, (payload) => {
-    console.log('Foreground message received:', payload);
-    callback(payload);
-  });
-
-  return unsubscribe;
+// Function to handle foreground messages - DISABLED
+export const onMessageListener = (callback: (payload: any) => void): (() => void) => {
+  console.log('🚫 Message listener disabled - returning empty function');
+  return () => {};
 };
 
-// Legacy Promise-based function (for backwards compatibility)
-export const onMessageListenerPromise = (): Promise<MessagePayload> => {
-  return new Promise((resolve) => {
-    if (!messaging) {
-      console.warn('Firebase messaging not initialized');
-      return;
-    }
-
-    onMessage(messaging, (payload) => {
-      console.log('Foreground message received:', payload);
-      resolve(payload);
-    });
-  });
+// Legacy Promise-based function (for backwards compatibility) - DISABLED
+export const onMessageListenerPromise = (): Promise<any> => {
+  console.log('🚫 Message listener promise disabled - returning resolved promise');
+  return Promise.resolve(null);
 };
