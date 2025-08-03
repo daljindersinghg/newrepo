@@ -9,6 +9,7 @@ import { clinicApi, ClinicSearchFilters } from '@/lib/api/clinic';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePatientAuth } from '@/hooks/usePatientAuth';
 import { SharedHeader } from '@/components/shared/SharedHeader';
+import { Header } from '@/components/landing/Header';
 import { useAppConfig } from '@/hooks/useAppConfig';
 
 interface Clinic {
@@ -290,12 +291,19 @@ export function ClinicResults() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Uniform Header */}
-      <SharedHeader 
-        showDentistLogin={true} 
-        showPatientAuth={true}
-        className="sticky top-0 z-50" 
-      />
+      {/* Consistent Header - Same as main page */}
+      <div className="hidden md:block">
+        <SharedHeader 
+          showDentistLogin={true} 
+          showPatientAuth={true}
+          className="sticky top-0 z-50" 
+        />
+      </div>
+      
+      {/* Mobile Header - Same as main page */}
+      <div className="md:hidden">
+        <Header />
+      </div>
 
       {/* Mobile-First Results Header */}
       <div className="bg-white border-b border-gray-200">
