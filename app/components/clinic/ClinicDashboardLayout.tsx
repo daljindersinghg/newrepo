@@ -10,6 +10,8 @@ import { ClinicCalendarTab } from './ClinicCalendarTab';
 import { ClinicPatientsTab } from './ClinicPatientsTab';
 import { ClinicSettingsTab } from './ClinicSettingsTab';
 import { SimpleNotificationDropdown } from './SimpleNotificationDropdown';
+import { AutoNotifications } from '@/components/notifications/AutoNotifications';
+import { ClinicAutoNotifications } from './ClinicAutoNotifications';
 
 type ClinicTab = 'overview' | 'appointments' | 'pending' | 'calendar' | 'patients' | 'settings';
 
@@ -201,6 +203,14 @@ export function ClinicDashboardLayout() {
           {renderTabContent()}
         </main>
       </div>
+      
+      {/* Auto-enable notifications for clinics */}
+      {clinic?.id && (
+        <ClinicAutoNotifications 
+          clinicId={clinic.id} 
+          autoEnable={true} 
+        />
+      )}
     </div>
   );
 }

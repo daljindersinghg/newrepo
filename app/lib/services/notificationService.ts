@@ -72,10 +72,20 @@ class NotificationService {
 
   public async initializeNotifications(clinicId: string): Promise<string | null> {
     try {
-      const permission = await this.requestPermission();
+      // For clinic IDs, be more persistent about getting permission
+      const isClinic = clinicId.includes('clinic') || clinicId.length > 10;
+      
+      let permission = await this.requestPermission();
+      
+      // If clinic and permission is default, try requesting again
+      if (isClinic && permission === 'default') {
+        console.log('Clinic detected - retrying permission request...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay
+        permission = await this.requestPermission();
+      }
       
       if (permission !== 'granted') {
-        console.warn('Notification permission not granted');
+        console.warn('Notification permission not granted for clinic:', clinicId);
         return null;
       }
 
@@ -88,12 +98,12 @@ class NotificationService {
       if (this.fcmToken) {
         // Store token on server associated with clinic
         await this.saveTokenToServer(this.fcmToken, clinicId);
-        console.log('FCM token generated and saved:', this.fcmToken);
+        console.log('✅ Clinic notifications initialized successfully:', clinicId);
       }
 
       return this.fcmToken;
     } catch (error) {
-      console.error('Error initializing notifications:', error);
+      console.error('Error initializing notifications for clinic:', clinicId, error);
       throw error;
     }
   }
