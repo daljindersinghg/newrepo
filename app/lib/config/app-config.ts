@@ -2,8 +2,8 @@
 // CHANGE THESE TWO VALUES TO UPDATE THROUGHOUT THE ENTIRE APP
 
 // ===== CONFIGURABLE VARIABLES =====
-export const GIFT_CARD_AMOUNT = 510;           // Change this number to update amount
-export const GIFT_CARD_TEXT = "gift cadsard";    // Change this text (e.g., "Amazon gift card", "gift card", etc.)
+export const GIFT_CARD_AMOUNT = 50;           // Change this number to update amount
+export const GIFT_CARD_TEXT = "gift card";    // Change this text (e.g., "Amazon gift card", "gift card", etc.)
 
 // ===== NOTIFICATION SETTINGS =====
 export const AUTO_ENABLE_CLINIC_NOTIFICATIONS = false;  // DISABLED - Auto-enable notifications for clinics
